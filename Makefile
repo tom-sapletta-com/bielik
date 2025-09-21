@@ -1,12 +1,24 @@
-.PHONY: install dev lint test build publish clean setup-dev
+.PHONY: install dev lint test build publish clean setup-dev bump-patch bump-minor bump-major publish-patch publish-minor publish-major
 
 install:
+	python -m venv .venv
+	source .venv/bin/activate
 	python3 -m pip install --upgrade pip
 	python3 -m pip install .
 
 setup-dev:
 	python3 -m pip install --upgrade pip
 	python3 -m pip install -e .[ollama] pytest flake8 build twine httpx
+
+# Version management
+bump-patch:
+	@python3 scripts/bump-version.py patch
+
+bump-minor:
+	@python3 scripts/bump-version.py minor
+
+bump-major:
+	@python3 scripts/bump-version.py major
 
 dev: setup-dev
 	@echo "✅ Development environment ready!"
@@ -27,26 +39,19 @@ test:
 	@echo "✅ All tests passed!"
 
 build:
-	@echo "🔨 Building package..."
-	python3 -m build
-	@echo "✅ Package built successfully!"
+	@bash scripts/build.sh
 
-publish2: ## Publish project to PyPI
-	@bash scripts/publish.sh
+publish-patch: clean
+	@bash scripts/publish.sh patch
 
-publish: clean build
-	@echo "🚀 Publishing to PyPI..."
-	twine upload dist/*
-	@echo "✅ Package published successfully!"
-	@echo ""
-	@echo "🎉 Congratulations! Your package is now available on PyPI!"
-	@echo "📦 Install with: pip install bielik"
-	@echo "🔗 Package URL: https://pypi.org/project/bielik/"
-	@echo ""
-	@echo "Next steps:"
-	@echo "1. Tag this release: git tag v0.1.0 && git push origin v0.1.0"
-	@echo "2. Create GitHub release with changelog"
-	@echo "3. Update documentation if needed"
+publish-minor: clean
+	@bash scripts/publish.sh minor
+
+publish-major: clean  
+	@bash scripts/publish.sh major
+
+publish: clean
+	@bash scripts/publish.sh patch
 
 clean:
 	@echo "🧹 Cleaning build artifacts..."
