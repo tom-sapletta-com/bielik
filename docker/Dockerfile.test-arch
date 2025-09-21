@@ -1,0 +1,26 @@
+# Arch Linux test environment for Bielik CLI
+FROM archlinux:latest
+
+# Update package database and install dependencies
+RUN pacman -Syu --noconfirm && \
+    pacman -S --noconfirm \
+    python \
+    python-pip \
+    python-virtualenv \
+    git \
+    base-devel \
+    curl \
+    wget \
+    ca-certificates
+
+# Set working directory
+WORKDIR /app
+
+# Copy project files
+COPY . .
+
+# Install Bielik with Context Provider Commands (skip AI models)
+RUN python install.py --skip-ai
+
+# Test command for verification
+CMD ["python", "run.py", "--info"]

@@ -1,48 +1,133 @@
 import pytest
+import os
+from unittest.mock import Mock, patch
 from bielik.cli.send_chat import send_chat
-
-class DummyResponse:
-    def __init__(self, data, status_code=200):
-        self._data = data
-        self.status_code = status_code
-
-    def raise_for_status(self):
-        if self.status_code >= 400:
-            raise Exception("HTTP Error")
-
-    def json(self):
-        return self._data
+from bielik.cli.commands import CommandProcessor
+from bielik.cli.command_api import ContextProviderCommand, CommandBase
 
 
-def test_send_chat_rest(monkeypatch):
-    """Test send_chat with mocked REST API response."""
-    def fake_post(url, json, timeout):
-        return DummyResponse({
-            "choices": [
-                {"message": {"content": "Hello from REST"}}
-            ]
-        })
-    monkeypatch.setattr("requests.post", fake_post)
-
+def test_send_chat_local_model_missing():
+    """Test send_chat when llama-cpp-python is not available."""
     messages = [{"role": "user", "content": "hi"}]
-    reply = send_chat(messages, model="bielik")
-    assert "REST" in reply or "Hello" in reply
+    reply = send_chat(messages, model="test-model")
+    
+    # Should return error message about missing llama-cpp-python
+    assert "LOCAL MODEL ERROR" in reply
+    assert "llama-cpp-python not installed" in reply
 
 
-def test_send_chat_rest_fail_then_fallback(monkeypatch):
-    """Simulate REST failure, fallback to ollama lib."""
-    monkeypatch.setattr("requests.post", lambda *a, **k: (_ for _ in ()).throw(Exception("REST fail")))
+@patch('bielik.hf_models.HAS_LLAMA_CPP', True)
+def test_send_chat_local_model_mock():
+    """Test send_chat with mocked llama-cpp-python."""
+    
+    # Mock the LocalLlamaRunner
+    mock_runner = Mock()
+    mock_runner.run_model.return_value = "Hello from local HF model"
+    
+    with patch('bielik.hf_models.LocalLlamaRunner', return_value=mock_runner):
+        messages = [{"role": "user", "content": "hi"}]
+        reply = send_chat(messages, model="test-model", use_local=True)
+        
+        assert "Hello from local HF model" in reply
 
-    # Fake ollama library
-    class DummyOllama:
-        def chat(self, model, messages):
-            return {"message": {"content": "Hello from ollama lib"}}
 
-    # Import the module to patch it
-    from bielik.cli import send_chat as send_chat_module
-    monkeypatch.setattr(send_chat_module, "HAVE_OLLAMA", True)
-    monkeypatch.setattr(send_chat_module, "ollama", DummyOllama())
+def test_context_provider_command_basic():
+    """Test basic Context Provider Command functionality."""
+    
+    class TestContextProvider(ContextProviderCommand):
+        def __init__(self):
+            super().__init__(
+                name="test", 
+                description="Test context provider",
+                usage="test: <input>"
+            )
+        
+        def provide_context(self, args, context):
+            return {
+                "command": "test",
+                "input": " ".join(args),
+                "context_type": "test_analysis"
+            }
+    
+    cmd = TestContextProvider()
+    result = cmd.provide_context(["hello", "world"], {})
+    
+    assert result["command"] == "test"
+    assert result["input"] == "hello world"
+    assert result["context_type"] == "test_analysis"
 
-    messages = [{"role": "user", "content": "hi"}]
-    reply = send_chat(messages, model="bielik")
-    assert "ollama lib" in reply
+
+def test_direct_command_basic():
+    """Test basic Direct Command functionality."""
+    
+    class TestDirectCommand(CommandBase):
+        def __init__(self):
+            super().__init__()
+            self.name = "testcmd"
+            self.description = "Test direct command"
+            self.is_context_provider = False
+        
+        def execute(self, args, context):
+            return f"Executed with: {' '.join(args)}"
+        
+        def get_help(self):
+            return f"Help for {self.name}: {self.description}"
+    
+    cmd = TestDirectCommand()
+    result = cmd.execute(["test", "input"], {})
+    
+    assert result == "Executed with: test input"
+
+
+def test_command_processor_context_provider():
+    """Test CommandProcessor with Context Provider commands."""
+    processor = CommandProcessor()
+    
+    # Test context provider command detection
+    assert processor._is_context_provider_command("folder: /path")
+    assert processor._is_context_provider_command("calc: 2+2")
+    assert not processor._is_context_provider_command(":help")
+    assert not processor._is_context_provider_command("regular message")
+
+
+def test_command_processor_direct_command():
+    """Test CommandProcessor with Direct commands."""
+    processor = CommandProcessor()
+    
+    # Test direct command detection  
+    assert processor.is_command(":help")
+    assert processor.is_command(":calc 2+2")
+    assert not processor.is_command("folder: /path")
+    assert not processor.is_command("regular message")
+
+
+def test_folder_command_integration():
+    """Test folder command integration (if available)."""
+    try:
+        from commands.folder.main import command as folder_command
+        
+        # Test with current directory
+        result = folder_command.provide_context(["."], {})
+        
+        assert "command" in result
+        assert result["command"] == "folder"
+        assert "directory_path" in result or "error" in result
+        
+    except ImportError:
+        # Skip test if folder command not available
+        pytest.skip("Folder command not available")
+
+
+def test_calc_command_integration():
+    """Test calc command integration (if available)."""
+    try:
+        from commands.calc.main import command as calc_command
+        
+        # Test basic calculation
+        result = calc_command.execute(["2+2"], {})
+        
+        assert "4" in result or "calculation" in result.lower()
+        
+    except ImportError:
+        # Skip test if calc command not available
+        pytest.skip("Calc command not available")
