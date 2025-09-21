@@ -1,0 +1,87 @@
+# Docker Compose for Bielik Testing
+# Provides easy testing environment for both minimal and full versions
+
+version: '3.8'
+
+services:
+  # Minimal Text-Only Version (~50MB)
+  bielik-minimal:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.minimal
+    image: bielik:minimal
+    container_name: bielik-minimal
+    volumes:
+      - ./test-data/models:/app/models
+      - ./test-data/minimal-data:/app/data
+      - ./test-scripts:/app/scripts:ro
+    environment:
+      - BIELIK_MODE=minimal
+      - BIELIK_MODELS_DIR=/app/models
+    working_dir: /app
+    profiles:
+      - minimal
+      - all
+
+  # Full Vision Version (~2GB+)  
+  bielik-full:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.full
+    image: bielik:full
+    container_name: bielik-full
+    volumes:
+      - ./test-data/models:/app/models
+      - ./test-data/full-data:/app/data
+      - ./test-data/images:/app/images
+      - ./test-scripts:/app/scripts:ro
+    environment:
+      - BIELIK_MODE=full
+      - BIELIK_MODELS_DIR=/app/models
+      - BIELIK_IMAGES_DIR=/app/images
+      - TORCH_HOME=/root/.cache/torch
+      - HF_HOME=/root/.cache/huggingface
+    working_dir: /app
+    profiles:
+      - full
+      - all
+
+  # Test Runner - runs automated tests
+  test-runner:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.minimal
+    image: bielik:minimal
+    container_name: bielik-tests
+    volumes:
+      - ./test-data:/app/test-data
+      - ./test-scripts:/app/scripts:ro
+    command: /app/scripts/run-all-tests.sh
+    profiles:
+      - test
+
+volumes:
+  models-cache:
+    driver: local
+  hf-cache:
+    driver: local
+
+# Usage Examples:
+# 
+# Test minimal version:
+# docker-compose --profile minimal up bielik-minimal
+# 
+# Test full version:
+# docker-compose --profile full up bielik-full
+# 
+# Run automated tests:
+# docker-compose --profile test up test-runner
+# 
+# Interactive minimal CLI:
+# docker-compose --profile minimal run --rm bielik-minimal
+# 
+# Interactive full CLI:
+# docker-compose --profile full run --rm bielik-full
+#
+# Download a model in minimal version:
+# docker-compose --profile minimal run --rm bielik-minimal python -m bielik -c ":download bielik-4.5b-v3.0-instruct"

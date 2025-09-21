@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "bielik"
-version = "0.1.3"
+version = "0.1.4"
 description = "Bielik — local Ollama chat client (CLI + web)"
 authors = [{name = "Tom Sapletta"}]
 license = "Apache-2.0"
@@ -29,47 +29,70 @@ classifiers = [
     "Natural Language :: English"
 ]
 
+# MINIMAL TEXT-ONLY DEPENDENCIES (~50MB total)
 dependencies = [
+  # Core CLI & API functionality
   "fastapi>=0.88.0,<1.0.0",
-  "uvicorn[standard]>=0.20.0,<1.0.0",
+  "uvicorn[standard]>=0.20.0,<1.0.0", 
   "requests>=2.25.0,<3.0.0",
   "python-dotenv>=0.19.0,<2.0.0",
+  
+  # Text processing & document analysis  
   "beautifulsoup4>=4.9.0,<5.0.0",
   "html2text>=2020.1.16,<2025.0.0",
   "python-magic>=0.4.24,<1.0.0",
-  # "textract>=1.6.3,<2.0.0; sys_platform != 'win32'",  # Disabled due to dependency conflicts
   "pypdf>=3.0.0,<4.0.0",
   "python-docx>=0.8.11,<1.0.0",
-  "huggingface_hub>=0.16.0,<1.0.0",
-  "Pillow>=9.0.0,<11.0.0",
-  "transformers>=4.25.0,<5.0.0",
-  "torch>=1.12.0,<3.0.0"
+  
+  # HuggingFace model management (essential for downloading models)
+  "huggingface_hub>=0.16.0,<1.0.0"
+  
+  # HEAVY PACKAGES MOVED TO OPTIONAL DEPENDENCIES:
+  # Pillow, transformers, torch (~2GB+) - install with: pip install bielik[vision]
 ]
 
 [project.optional-dependencies]
+# Basic Ollama integration (lightweight)
 ollama = ["ollama>=0.1.0,<1.0.0"]
+
+# Local HF model support (CPU-only, medium weight ~100MB)
 local = [
   "llama-cpp-python>=0.2.0,<1.0.0",
   "textract>=1.6.3,<1.6.5; sys_platform != 'win32'"
 ]
-gpu = [
-  "llama-cpp-python[cuda]>=0.2.0,<1.0.0",
-  "torch>=2.0.0,<3.0.0"
+
+# HEAVY VISION & AI PACKAGES (~2GB+) - Install on demand
+vision = [
+  "Pillow>=9.0.0,<11.0.0",           # Image processing (~5MB)
+  "transformers>=4.25.0,<5.0.0",     # HuggingFace models (~100MB)  
+  "torch>=1.12.0,<3.0.0"            # PyTorch + CUDA (~2GB!)
 ]
+
+# GPU acceleration (includes vision + CUDA)
+gpu = [
+  "bielik[vision]",                   # Include vision packages
+  "llama-cpp-python[cuda]>=0.2.0,<1.0.0"
+]
+
+# Development tools
 dev = [
   "pytest>=6.0.0,<8.0.0",
-  "pytest-cov>=2.10.0,<5.0.0",
+  "pytest-cov>=2.10.0,<5.0.0", 
   "flake8>=4.0.0,<7.0.0",
   "black>=22.0.0,<24.0.0",
   "isort>=5.10.0,<6.0.0",
   "build>=0.8.0,<1.0.0",
   "twine>=4.0.0,<5.0.0"
 ]
+
+# Docker support
 docker = [
   "docker>=6.0.0,<7.0.0"
 ]
+
+# Everything (for advanced users)
 all = [
-  "bielik[ollama,dev,docker]"
+  "bielik[ollama,local,vision,dev,docker]"
 ]
 
 [project.scripts]

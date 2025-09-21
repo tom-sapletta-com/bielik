@@ -1,0 +1,62 @@
+# Bielik Full Vision Version - Dockerfile
+# Complete version (~2GB+) with image analysis and AI vision capabilities
+
+FROM python:3.11-slim
+
+LABEL maintainer="Bielik Team"
+LABEL description="Bielik Full - Polish AI Assistant (Vision + Text)"
+LABEL version="full"
+
+# Install system dependencies including GPU support
+RUN apt-get update && apt-get install -y \
+    curl \
+    git \
+    libmagic1 \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Copy project files
+COPY pyproject.toml setup.cfg MANIFEST.in ./
+COPY bielik/ ./bielik/
+COPY README.md LICENSE ./
+
+# Install Bielik with full vision capabilities
+RUN pip install --no-cache-dir -e .[vision]
+
+# Pre-download common HuggingFace models cache
+RUN mkdir -p /root/.cache/huggingface
+
+# Create directories for models and data
+RUN mkdir -p /app/models /app/data /app/images
+VOLUME ["/app/models", "/app/data", "/app/images"]
+
+# Set environment variables for full mode
+ENV BIELIK_MODE=full
+ENV BIELIK_MODELS_DIR=/app/models
+ENV BIELIK_DATA_DIR=/app/data
+ENV BIELIK_IMAGES_DIR=/app/images
+ENV TORCH_HOME=/root/.cache/torch
+ENV HF_HOME=/root/.cache/huggingface
+
+# Expose port for web interface
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD python -c "import bielik; print('OK')" || exit 1
+
+# Default command - start CLI
+CMD ["python", "-m", "bielik"]
+
+# Usage examples:
+# docker build -f docker/Dockerfile.full -t bielik:full .
+# docker run -it -v $(pwd)/models:/app/models -v $(pwd)/images:/app/images bielik:full
+# docker run -it --gpus all -v $(pwd)/models:/app/models bielik:full  # With GPU support

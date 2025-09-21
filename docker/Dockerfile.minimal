@@ -1,0 +1,49 @@
+# Bielik Minimal Text-Only Version - Dockerfile
+# Lightweight version (~50MB) for text processing and HuggingFace model management
+
+FROM python:3.11-slim
+
+LABEL maintainer="Bielik Team"
+LABEL description="Bielik Minimal - Polish AI Assistant (Text-Only)"
+LABEL version="minimal"
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Copy project files
+COPY pyproject.toml setup.cfg MANIFEST.in ./
+COPY bielik/ ./bielik/
+COPY README.md LICENSE ./
+
+# Install Bielik in minimal mode (no heavy packages)
+RUN pip install --no-cache-dir -e .
+
+# Create models directory for HuggingFace downloads
+RUN mkdir -p /app/models
+VOLUME ["/app/models"]
+
+# Create user data directory
+RUN mkdir -p /app/data
+VOLUME ["/app/data"]
+
+# Set environment variables for minimal mode
+ENV BIELIK_MODE=minimal
+ENV BIELIK_MODELS_DIR=/app/models
+ENV BIELIK_DATA_DIR=/app/data
+
+# Expose port for web interface (if needed)
+EXPOSE 8000
+
+# Default command - start CLI
+CMD ["python", "-m", "bielik"]
+
+# Usage examples:
+# docker build -f docker/Dockerfile.minimal -t bielik:minimal .
+# docker run -it -v $(pwd)/models:/app/models bielik:minimal
+# docker run -it -v $(pwd)/models:/app/models bielik:minimal python -m bielik :models
