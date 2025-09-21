@@ -7,7 +7,7 @@ import json
 
 OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
 CHAT_ENDPOINT = OLLAMA_HOST.rstrip("/") + "/v1/chat/completions"
-DEFAULT_MODEL = os.environ.get("BIELIK_MODEL", "bielik")
+DEFAULT_MODEL = os.environ.get("BIELIK_MODEL", "SpeakLeash/bielik-7b-instruct-v0.1-gguf")
 
 try:
     import ollama
