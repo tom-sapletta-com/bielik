@@ -19,6 +19,7 @@ class CommandBase(ABC):
     def __init__(self):
         self.name = self.__class__.__name__.lower().replace('command', '')
         self.description = getattr(self, '__doc__', 'No description available')
+        self.is_context_provider = False  # False = direct command (:calc), True = context provider (folder:)
     
     @abstractmethod
     def execute(self, args: List[str], context: Dict[str, Any]) -> str:
@@ -26,11 +27,11 @@ class CommandBase(ABC):
         Execute the command with given arguments.
         
         Args:
-            args: Command line arguments (e.g., [':calc', '2', '+', '3'])
+            args: Command line arguments (e.g., [':calc', '2', '+', '3'] or ['folder:', '~/documents'])
             context: Context data including current_model, messages, etc.
             
         Returns:
-            Command output as string
+            Command output as string (direct) or context data (for context providers)
         """
         pass
     
@@ -41,7 +42,62 @@ class CommandBase(ABC):
     
     def get_usage(self) -> str:
         """Return usage example for this command."""
+        if self.is_context_provider:
+            return f"{self.name}: <args>"
         return f":{self.name} <args>"
+
+
+class ContextProviderCommand(CommandBase):
+    """Base class for context provider commands (format: 'name: args')."""
+    
+    def __init__(self):
+        super().__init__()
+        self.is_context_provider = True
+    
+    @abstractmethod
+    def provide_context(self, args: List[str], context: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Generate context data from the given arguments.
+        
+        Args:
+            args: Command arguments (e.g., ['folder:', '~/documents'])
+            context: Current context data
+            
+        Returns:
+            Dictionary with context data to be used by AI
+        """
+        pass
+    
+    def execute(self, args: List[str], context: Dict[str, Any]) -> str:
+        """
+        Execute context provider command - generates context data.
+        
+        Returns formatted context data as string for AI consumption.
+        """
+        context_data = self.provide_context(args, context)
+        
+        # Format context data for AI consumption
+        if context_data:
+            formatted = f"\n=== Context from {self.name}: ===\n"
+            for key, value in context_data.items():
+                formatted += f"{key}: {value}\n"
+            formatted += "=== End Context ===\n"
+            return formatted
+        
+        return f"No context data generated from {self.name}: command"
+    
+    def get_help(self) -> str:
+        """Default help implementation for context providers."""
+        return f"""📊 {self.name.title()} Context Provider
+
+{self.description}
+
+Usage: {self.get_usage()}
+
+This is a context provider command that generates structured data 
+for AI analysis. After running this command, you can ask the AI 
+questions related to the generated context.
+"""
 
 
 class MCPCommand(CommandBase):
@@ -151,7 +207,8 @@ class CommandRegistry:
                 attr = getattr(module, attr_name)
                 if (isinstance(attr, type) and 
                     issubclass(attr, CommandBase) and 
-                    attr != CommandBase):
+                    attr not in (CommandBase, ContextProviderCommand) and
+                    (not hasattr(attr, '__abstractmethods__') or len(attr.__abstractmethods__) == 0)):
                     
                     command_instance = attr()
                     self.commands[command_name] = command_instance

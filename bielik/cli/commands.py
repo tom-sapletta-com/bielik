@@ -54,16 +54,37 @@ class CommandProcessor:
         print("  :exit    - end session")
         print("  Ctrl+C   - quick exit")
         
-        # Show dynamic commands if available
+        # Show dynamic commands separated by type
         dynamic_commands = self.command_registry.list_commands()
         if dynamic_commands:
-            print()
-            print("🔧 Extension Commands:")
+            direct_commands = []
+            context_providers = []
+            
+            # Separate commands by type
             for cmd_name in sorted(dynamic_commands):
                 cmd = self.command_registry.get_command(cmd_name)
                 if cmd:
-                    print(f"  :{cmd_name}  - {cmd.description}")
-            print("  Use ':<command> help' for detailed help on any extension command")
+                    if getattr(cmd, 'is_context_provider', False):
+                        context_providers.append((cmd_name, cmd.description))
+                    else:
+                        direct_commands.append((cmd_name, cmd.description))
+            
+            # Show direct extension commands
+            if direct_commands:
+                print()
+                print("🔧 Extension Commands:")
+                for cmd_name, description in direct_commands:
+                    print(f"  :{cmd_name}  - {description}")
+                print("  Use ':<command> help' for detailed help on any extension command")
+            
+            # Show context provider commands
+            if context_providers:
+                print()
+                print("📊 Context Providers:")
+                for cmd_name, description in context_providers:
+                    print(f"  {cmd_name}:  - {description}")
+                print("  These commands provide context for AI analysis.")
+                print("  Example: folder: ~/documents → then ask AI questions about the directory")
         print()
         print("💡 Tips:")
         print("  • Write in Polish - AI understands Polish!")
@@ -227,42 +248,122 @@ class CommandProcessor:
         
         # Check for dynamic/extension commands
         else:
+            # Handle both formats: :command and command:
+            is_context_provider = self._is_context_provider_command(command)
+            
+            if is_context_provider:
+                # Context provider format: "folder: ~/documents"
+                return self._handle_context_provider(command, current_model, messages)
+            else:
+                # Direct command format: ":calc 2+3"
+                return self._handle_direct_command(command, current_model, messages)
+            
+    def _handle_context_provider(self, command: str, current_model: str, messages: list) -> tuple:
+        """Handle context provider commands (format: 'name: args')."""
+        try:
+            # Parse command: "folder: ~/documents" 
+            parts = command.split(':', 1)
+            cmd_name = parts[0].strip()
+            cmd_args = parts[1].strip() if len(parts) > 1 else ""
+            
+            # Get the command from registry
+            dynamic_command = self.command_registry.get_command(cmd_name)
+            if not dynamic_command:
+                print(f"❌ Unknown context provider command: {cmd_name}")
+                return True, None, messages
+            
+            # Prepare context for dynamic command
+            context = {
+                'current_model': current_model,
+                'messages': messages,
+                'settings': self.settings,
+                'config': self.config
+            }
+            
+            # Build args array: ['folder:', '~/documents']
+            args = [f"{cmd_name}:", cmd_args] if cmd_args else [f"{cmd_name}:"]
+            
+            # Execute context provider command
+            result = self.command_registry.execute_command(cmd_name, args, context)
+            
+            # For context providers, we return the context to be added to AI prompt
+            # The result should be formatted context data
+            if result and not result.startswith("❌"):
+                print(f"🔍 Context generated from {cmd_name}: command")
+                # Return False to indicate this is not a complete command - AI should process context
+                return False, result, messages
+            else:
+                print(f"❌ No context generated: {result}")
+                return True, None, messages
+                
+        except Exception as e:
+            print(f"❌ Context provider command failed: {e}")
+            return True, None, messages
+    
+    def _handle_direct_command(self, command: str, current_model: str, messages: list) -> tuple:
+        """Handle direct extension commands (format: ':command args')."""
+        try:
             # Extract command name (remove ':' prefix)
-            cmd_name = command.split()[0][1:] if command.startswith(':') else command
+            cmd_name = command.split()[0][1:] if command.startswith(':') else command.split()[0]
             
             # Try to execute dynamic command
             dynamic_command = self.command_registry.get_command(cmd_name)
             if dynamic_command:
-                try:
-                    # Prepare context for dynamic command
-                    context = {
-                        'current_model': current_model,
-                        'messages': messages,
-                        'settings': self.settings,
-                        'config': self.config
-                    }
-                    
-                    # Parse command arguments
-                    args = command.split() if command else []
-                    
-                    # Execute dynamic command
-                    result = self.command_registry.execute_command(cmd_name, args, context)
-                    print(result)
-                    return True, None, messages
-                    
-                except Exception as e:
-                    print(f"❌ Extension command failed: {e}")
-                    return True, None, messages
-            
-            # Unknown command
-            help_msg = (f"❓ Unknown command: {command}. "
-                       "Type :help to see available commands.")
-            print(help_msg)
+                # Prepare context for dynamic command
+                context = {
+                    'current_model': current_model,
+                    'messages': messages,
+                    'settings': self.settings,
+                    'config': self.config
+                }
+                
+                # Parse command arguments
+                args = command.split() if command else []
+                
+                # Execute dynamic command
+                result = self.command_registry.execute_command(cmd_name, args, context)
+                print(result)
+                return True, None, messages
+                
+            else:
+                # Unknown command
+                help_msg = (f"❓ Unknown command: {command}. "
+                           "Type :help to see available commands.")
+                print(help_msg)
+                return True, None, messages
+                
+        except Exception as e:
+            print(f"❌ Extension command failed: {e}")
             return True, None, messages
     
     def is_command(self, user_input: str) -> bool:
         """Check if user input is a command."""
-        return user_input.strip().startswith(':')
+        stripped = user_input.strip()
+        # Check for :command format (builtin and direct extension commands)
+        if stripped.startswith(':'):
+            return True
+        
+        # Check for command: format (context providers)
+        if self._is_context_provider_command(stripped):
+            return True
+            
+        return False
+    
+    def _is_context_provider_command(self, user_input: str) -> bool:
+        """Check if input matches context provider format: 'command: args'"""
+        if ':' not in user_input:
+            return False
+        
+        # Split on first colon
+        parts = user_input.split(':', 1)
+        if len(parts) != 2:
+            return False
+        
+        command_name = parts[0].strip()
+        
+        # Check if this command exists in registry and is a context provider
+        dynamic_command = self.command_registry.get_command(command_name)
+        return dynamic_command is not None and getattr(dynamic_command, 'is_context_provider', False)
     
     def get_available_commands(self) -> List[str]:
         """Get list of available commands including dynamic commands."""
@@ -272,8 +373,16 @@ class CommandProcessor:
             ":download", ":delete", ":switch", ":storage", ":exit", ":quit", ":q"
         ]
         
-        # Dynamic/extension commands
-        dynamic_commands = [f":{cmd}" for cmd in self.command_registry.list_commands()]
+        # Dynamic/extension commands (separate direct commands from context providers)
+        direct_commands = []
+        context_providers = []
+        
+        for cmd_name in self.command_registry.list_commands():
+            cmd_obj = self.command_registry.get_command(cmd_name)
+            if cmd_obj and getattr(cmd_obj, 'is_context_provider', False):
+                context_providers.append(f"{cmd_name}:")
+            else:
+                direct_commands.append(f":{cmd_name}")
         
         # Combine and return
-        return builtin_commands + dynamic_commands
+        return builtin_commands + direct_commands + context_providers

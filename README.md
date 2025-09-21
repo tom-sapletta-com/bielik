@@ -524,7 +524,11 @@ git clone https://github.com/tom-sapletta-com/bielik.git
 cd bielik
 python -m venv .venv
 source .venv/bin/activate
-pip install -e .[ollama]
+pip install -e .
+pip install -e .[local]
+pip install -e .[dev]
+pip install -e .[gpu]
+pip install -e .[vision]
 ```
 
 

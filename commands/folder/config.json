@@ -1,0 +1,55 @@
+{
+  "name": "folder",
+  "alias": ["dir","directory"],
+  "description": "Analyze directory contents and provide context for AI processing",
+  "version": "1.0.0",
+  "author": "Bielik CLI",
+  "command_type": "context_provider",
+  "usage_format": "folder: <directory_path>",
+  "dependencies": [],
+  "mcp_enabled": false,
+  "examples": [
+    {
+      "command": "folder: ~/documents",
+      "description": "Analyze home documents directory"
+    },
+    {
+      "command": "folder: /path/to/project",
+      "description": "Analyze project directory"
+    },
+    {
+      "command": "folder: .",
+      "description": "Analyze current directory"
+    }
+  ],
+  "help_topics": [
+    {
+      "topic": "directory_analysis",
+      "description": "Provides file counts, types, sizes, and structure overview"
+    },
+    {
+      "topic": "context_provider",
+      "description": "Generates context data for AI to answer follow-up questions"
+    },
+    {
+      "topic": "usage_workflow",
+      "description": "Run folder: command first, then ask AI questions about the directory"
+    }
+  ],
+  "output_format": {
+    "type": "structured_context",
+    "contains": [
+      "directory_path",
+      "file_summary",
+      "folder_summary", 
+      "file_types_distribution",
+      "largest_files",
+      "directory_structure"
+    ]
+  },
+  "ai_integration": {
+    "provides_context": true,
+    "context_types": ["directory_analysis", "file_system"],
+    "follow_up_capable": true
+  }
+}
