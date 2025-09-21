@@ -17,10 +17,10 @@ import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 
-from bielik.cli.command_api import CommandBase
+from bielik.cli.command_api import ContextProviderCommand
 
 
-class CalculatorCommand(CommandBase):
+class CalculatorCommand(ContextProviderCommand):
     """Advanced calculator command with expression evaluation."""
     
     def __init__(self):
@@ -72,30 +72,80 @@ class CalculatorCommand(CommandBase):
             'inf': math.inf,
         }
     
-    def execute(self, args: List[str], context: Dict[str, Any]) -> str:
-        """Execute calculator command."""
-        if len(args) < 2:  # args[0] is ':calc'
-            return self.get_help()
+    def provide_context(self, args: List[str], context: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Generate context data from calculator operations.
         
-        # Join all arguments after ':calc' to form the expression
+        Args:
+            args: Command arguments (e.g., ['calc:', '2', '+', '3'])
+            context: Current context data
+            
+        Returns:
+            Dictionary with calculation results and context data
+        """
+        if len(args) < 2:  # args[0] is 'calc:'
+            return {
+                "error": "Please provide a mathematical expression",
+                "help": "Usage: calc: 2 + 3 * 4",
+                "calculation": None,
+                "result": None
+            }
+        
+        # Join all arguments after 'calc:' to form the expression
         expression = ' '.join(args[1:])
         
         try:
             # Handle special commands
             if expression.lower() in ['help', '?']:
-                return self.get_help()
+                return {
+                    "type": "help",
+                    "content": self.get_help(),
+                    "calculation": None,
+                    "result": None
+                }
             elif expression.lower() == 'functions':
-                return self._list_functions()
+                return {
+                    "type": "functions_list",
+                    "content": self._list_functions(),
+                    "calculation": None,
+                    "result": None
+                }
             elif expression.lower() == 'constants':
-                return self._list_constants()
+                return {
+                    "type": "constants_list", 
+                    "content": self._list_constants(),
+                    "calculation": None,
+                    "result": None
+                }
             
             # Evaluate the mathematical expression
             result = self._evaluate_expression(expression)
             
-            return f"🧮 {expression} = {result}"
+            return {
+                "type": "calculation",
+                "expression": expression,
+                "result": result,
+                "formatted_result": f"🧮 {expression} = {result}",
+                "calculation": {
+                    "input": expression,
+                    "output": result,
+                    "success": True
+                }
+            }
             
         except Exception as e:
-            return f"❌ Calculation error: {str(e)}"
+            return {
+                "type": "error",
+                "expression": expression,
+                "error": str(e),
+                "formatted_result": f"❌ Calculation error: {str(e)}",
+                "calculation": {
+                    "input": expression,
+                    "output": None,
+                    "success": False,
+                    "error": str(e)
+                }
+            }
     
     def _evaluate_expression(self, expr: str) -> float:
         """Safely evaluate a mathematical expression."""
@@ -173,17 +223,17 @@ class CalculatorCommand(CommandBase):
         return """🧮 Calculator Command Help
 
 Usage:
-  :calc <expression>          # Evaluate mathematical expression
-  :calc 2 + 3 * 4            # Basic arithmetic: 2 + 3 * 4 = 14
-  :calc sqrt(16) + sin(pi/2) # Functions: sqrt(16) + sin(pi/2) = 5.0
-  :calc 2**8                 # Powers: 2**8 = 256
-  :calc log10(1000)          # Logarithms: log10(1000) = 3.0
-  :calc factorial(5)         # Factorial: factorial(5) = 120
+  calc: <expression>          # Evaluate mathematical expression
+  calc: 2 + 3 * 4            # Basic arithmetic: 2 + 3 * 4 = 14
+  calc: sqrt(16) + sin(pi/2) # Functions: sqrt(16) + sin(pi/2) = 5.0
+  calc: 2**8                 # Powers: 2**8 = 256
+  calc: log10(1000)          # Logarithms: log10(1000) = 3.0
+  calc: factorial(5)         # Factorial: factorial(5) = 120
 
 Special Commands:
-  :calc functions            # List available functions
-  :calc constants            # List available constants
-  :calc help                 # Show this help
+  calc: functions            # List available functions
+  calc: constants            # List available constants
+  calc: help                 # Show this help
 
 Supported Operations:
   +, -, *, /, ** (power), sqrt, sin, cos, tan, log, exp, etc.
@@ -192,12 +242,12 @@ Constants:
   pi, e, tau, inf
 
 Examples:
-  :calc (3 + 4) * 5
-  :calc sin(pi/4) + cos(pi/4)
-  :calc sqrt(2) * sqrt(8)
-  :calc log(e**2)
+  calc: (3 + 4) * 5
+  calc: sin(pi/4) + cos(pi/4)
+  calc: sqrt(2) * sqrt(8)
+  calc: log(e**2)
 """
 
     def get_usage(self) -> str:
         """Return usage example."""
-        return ":calc <mathematical_expression>"
+        return "calc: <mathematical_expression>"

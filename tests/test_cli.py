@@ -17,6 +17,7 @@ def test_send_chat_local_model_missing():
 
 
 @patch('bielik.cli.send_chat.HAS_LLAMA_CPP', True)
+@patch('bielik.hf_models.HAS_LLAMA_CPP', True)
 def test_send_chat_local_model_mock():
     """Test send_chat with mocked llama-cpp-python."""
     

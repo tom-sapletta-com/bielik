@@ -1,9 +1,7 @@
 .PHONY: install dev lint test build publish clean setup-dev bump-patch bump-minor bump-major publish-patch publish-minor publish-major docker-test docker-test-ubuntu docker-test-debian docker-test-alpine docker-test-centos docker-test-arch docker-test-oneliner docker-build docker-clean test-all
 
 install:
-	#rm -rf .venv
-	#python3 -m venv .venv
-	source .venv/bin/activate
+	@echo "📦 Installing Bielik CLI..."
 	@python3 -m pip install --upgrade pip
 	@python3 -m pip install -e .
 

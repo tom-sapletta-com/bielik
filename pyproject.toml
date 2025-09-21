@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "bielik"
-version = "0.1.15"
+version = "0.1.17"
 description = "Bielik — local chat client (CLI + web) with HuggingFace Integration"
 authors = [{name = "Tom Sapletta"}]
 license = "Apache-2.0"
@@ -29,7 +29,7 @@ classifiers = [
     "Natural Language :: English"
 ]
 
-# CORE DEPENDENCIES INCLUDING LOCAL HF MODEL SUPPORT
+# CORE DEPENDENCIES - ESSENTIAL FUNCTIONALITY ONLY
 dependencies = [
   # Core CLI & API functionality
   "fastapi>=0.88.0,<1.0.0",
@@ -45,21 +45,19 @@ dependencies = [
   "python-docx>=0.8.11,<1.0.0",
   
   # HuggingFace model management (essential for downloading models)
-  "huggingface_hub>=0.16.0,<1.0.0",
+  "huggingface_hub>=0.16.0,<1.0.0"
   
-  # Local HF model support (now included by default)
-  "llama-cpp-python>=0.2.0,<1.0.0"
-  
-  # HEAVY PACKAGES MOVED TO OPTIONAL DEPENDENCIES:
-  # Pillow, transformers, torch (~2GB+) - install with: pip install bielik[vision]
+  # HEAVY/COMPILATION PACKAGES MOVED TO OPTIONAL DEPENDENCIES:
+  # llama-cpp-python, Pillow, transformers, torch (~2GB+) - install with extras
 ]
 
 [project.optional-dependencies]
 # Basic Ollama integration (lightweight)
 ollama = ["ollama>=0.1.0,<1.0.0"]
 
-# Extended local support (additional text extraction tools)
+# Extended local support with AI models (includes llama-cpp-python)
 local = [
+  "llama-cpp-python>=0.2.0,<1.0.0",                   # Local HF model support
   "textract>=1.6.3,<1.6.4; sys_platform != 'win32'"  # Fixed version constraint
 ]
 

@@ -49,17 +49,75 @@ def find_fallback_model(model_manager):
 
 
 def execute_prompt(prompt: str, model: str, use_local: bool = True) -> str:
-    """Execute a single prompt using local HF model."""
+    """Execute a single prompt - handles both Context Provider Commands and AI model queries."""
     from .send_chat import send_chat
     from ..content_processor import get_content_processor
     from ..hf_models import HAS_LLAMA_CPP
+    from .command_api import get_command_registry
     
     # Initialize components
     content_processor = get_content_processor()
     cli_settings = get_cli_settings()
     hf_model_manager = get_model_manager()
+    command_registry = get_command_registry()
     
-    # Check if llama-cpp-python is available
+    # Check if this is a CLI command (format: ":commandname args") or Context Provider Command (format: "commandname: args")
+    if ':' in prompt and not prompt.startswith('http'):
+        # Check for regular CLI command first (format: ":command args")
+        if prompt.startswith(':'):
+            parts = prompt[1:].split(' ', 1)  # Remove ':' and split on first space
+            potential_command = parts[0].strip()
+            command_args = parts[1].strip() if len(parts) > 1 else ""
+            
+            # Check if this command exists in the registry
+            available_commands = command_registry.list_commands()
+            if potential_command in available_commands:
+                command = command_registry.get_command(potential_command)
+                if command and not getattr(command, 'is_context_provider', False):
+                    # This is a regular CLI command - execute it independently of AI models
+                    try:
+                        context = {
+                            'current_model': model,
+                            'messages': [],
+                            'cli_settings': cli_settings
+                        }
+                        # Parse command arguments
+                        args = [f":{potential_command}"] + command_args.split() if command_args else [f":{potential_command}"]
+                        result = command_registry.execute_command(potential_command, args, context)
+                        return result
+                    except Exception as e:
+                        return f"❌ Error executing :{potential_command} command: {e}"
+        
+        # Check for Context Provider Command (format: "commandname: args")
+        else:
+            parts = prompt.split(':', 1)
+            if len(parts) == 2:
+                potential_command = parts[0].strip()
+                command_args = parts[1].strip()
+                
+                # Check if this command exists in the registry
+                available_commands = command_registry.list_commands()
+                if potential_command in available_commands:
+                    command = command_registry.get_command(potential_command)
+                    if command and getattr(command, 'is_context_provider', False):
+                        # This is a Context Provider Command - execute it independently of AI models
+                        try:
+                            context = {
+                                'current_model': model,
+                                'messages': [],
+                                'cli_settings': cli_settings
+                            }
+                            # Parse command arguments
+                            args = [f"{potential_command}:"] + command_args.split() if command_args else [f"{potential_command}:"]
+                            result = command_registry.execute_command(potential_command, args, context)
+                            return result
+                        except Exception as e:
+                            return f"❌ Error executing {potential_command}: command: {e}"
+    
+    # Process content in user message (URLs, file paths)
+    enhanced_prompt = content_processor.process_content_in_text(prompt)
+    
+    # For AI model queries, check if llama-cpp-python is available
     if not HAS_LLAMA_CPP:
         return "[LOCAL MODEL ERROR] llama-cpp-python not installed. Install with: pip install 'bielik[local]'"
     
@@ -67,15 +125,12 @@ def execute_prompt(prompt: str, model: str, use_local: bool = True) -> str:
     if not hf_model_manager.is_model_downloaded(model):
         return f"[LOCAL MODEL ERROR] Model {model} not downloaded. Use :download {model}"
     
-    # Prepare system prompt with dynamic assistant name
+    # Prepare system prompt with dynamic assistant name for AI model
     assistant_name = cli_settings.get_assistant_name()
     system_prompt = (f"You are {assistant_name}, a helpful Polish AI assistant. "
                      f"Respond in Polish unless asked otherwise.")
     
-    # Process content in user message (URLs, file paths)
-    enhanced_prompt = content_processor.process_content_in_text(prompt)
-    
-    # Create messages
+    # Create messages for AI model
     messages = [
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": enhanced_prompt}

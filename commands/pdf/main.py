@@ -14,7 +14,7 @@ from typing import Dict, List, Any, Optional
 # Import the command API from the parent package
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 
-from bielik.cli.command_api import FileCommand, MCPCommand
+from bielik.cli.command_api import ContextProviderCommand
 
 # Import document processing libraries
 try:
@@ -36,8 +36,8 @@ except ImportError:
     HAS_TEXTRACT = False
 
 
-class DocumentReaderCommand(FileCommand, MCPCommand):
-    """Advanced document reader with multiple format support and MCP integration."""
+class DocumentReaderCommand(ContextProviderCommand):
+    """Advanced document reader with multiple format support and Context Provider integration."""
     
     def __init__(self):
         super().__init__()
@@ -58,16 +58,38 @@ class DocumentReaderCommand(FileCommand, MCPCommand):
         # Initialize MCP for document processing
         self.init_mcp("document-processor", "text-extraction")
     
-    def execute(self, args: List[str], context: Dict[str, Any]) -> str:
-        """Execute PDF/document reader command."""
-        if len(args) < 2:  # args[0] is ':pdf'
-            return self.get_help()
+    def provide_context(self, args: List[str], context: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Generate context data from document processing operations.
+        
+        Args:
+            args: Command arguments (e.g., ['pdf:', 'document.pdf'])
+            context: Current context data
+            
+        Returns:
+            Dictionary with document content and metadata
+        """
+        if len(args) < 2:  # args[0] is 'pdf:'
+            return {
+                "error": "Please provide a file path",
+                "help": "Usage: pdf: document.pdf",
+                "document": None,
+                "content": None
+            }
         
         # Handle special commands
         if args[1].lower() in ['help', '?']:
-            return self.get_help()
+            return {
+                "type": "help",
+                "content": self.get_help(),
+                "document": None
+            }
         elif args[1].lower() == 'formats':
-            return self._list_supported_formats()
+            return {
+                "type": "formats_list",
+                "content": self._list_supported_formats(),
+                "document": None
+            }
         
         file_path = args[1]
         
@@ -90,7 +112,12 @@ class DocumentReaderCommand(FileCommand, MCPCommand):
                         page_num = int(page_range)
                         options['page_range'] = (page_num - 1, page_num)
                 except ValueError:
-                    return f"❌ Invalid page range: {page_range}"
+                    return {
+                        "type": "error",
+                        "error": f"Invalid page range: {page_range}",
+                        "document": None,
+                        "content": None
+                    }
             elif arg == '--metadata':
                 options['include_metadata'] = True
             elif arg.startswith('--format='):
@@ -100,7 +127,12 @@ class DocumentReaderCommand(FileCommand, MCPCommand):
             # Validate file path
             is_valid, error_msg = self.validate_file_path(file_path)
             if not is_valid:
-                return f"❌ {error_msg}"
+                return {
+                    "type": "error",
+                    "error": error_msg,
+                    "document": file_path,
+                    "content": None
+                }
             
             # Get file info
             file_size = self.get_file_size(file_path)
@@ -108,30 +140,59 @@ class DocumentReaderCommand(FileCommand, MCPCommand):
             
             # Check if format is supported
             if file_ext not in self.supported_extensions:
-                return f"❌ Unsupported file format: {file_ext}\nUse ':pdf formats' to see supported formats"
+                return {
+                    "type": "error",
+                    "error": f"Unsupported file format: {file_ext}",
+                    "help": "Use 'pdf: formats' to see supported formats",
+                    "document": file_path,
+                    "content": None
+                }
             
             # Extract text using appropriate method
             result = self._extract_text(file_path, file_ext, options)
+            
+            # Get metadata if requested
+            metadata = None
+            if options['include_metadata']:
+                metadata = self._get_metadata(file_path, file_ext)
             
             # Format output
             output = [f"📄 Document: {Path(file_path).name}"]
             output.append(f"📊 Size: {self._format_file_size(file_size)}")
             output.append(f"📝 Format: {file_ext.upper()}")
             
-            if options['include_metadata']:
-                metadata = self._get_metadata(file_path, file_ext)
-                if metadata:
-                    output.append("📋 Metadata:")
-                    for key, value in metadata.items():
-                        output.append(f"  {key}: {value}")
+            if metadata:
+                output.append("📋 Metadata:")
+                for key, value in metadata.items():
+                    output.append(f"  {key}: {value}")
             
             output.append("-" * 50)
             output.append(result)
             
-            return "\n".join(output)
+            return {
+                "type": "document",
+                "document": {
+                    "path": file_path,
+                    "name": Path(file_path).name,
+                    "size": file_size,
+                    "format": file_ext.upper(),
+                    "extension": file_ext
+                },
+                "content": result,
+                "metadata": metadata,
+                "formatted_result": "\n".join(output),
+                "options": options,
+                "success": True
+            }
             
         except Exception as e:
-            return f"❌ Failed to process document: {str(e)}"
+            return {
+                "type": "error",
+                "document": file_path,
+                "error": str(e),
+                "formatted_result": f"❌ Failed to process document: {str(e)}",
+                "success": False
+            }
     
     def _extract_text(self, file_path: str, file_ext: str, options: Dict[str, Any]) -> str:
         """Extract text from document using appropriate method."""
@@ -313,11 +374,11 @@ class DocumentReaderCommand(FileCommand, MCPCommand):
         return """📄 Document Reader Command Help
 
 Usage:
-  :pdf <file_path>                    # Extract all text from document
-  :pdf document.pdf --pages=1-5       # Extract text from pages 1-5
-  :pdf document.pdf --pages=3         # Extract text from page 3 only
-  :pdf document.docx --metadata       # Include document metadata
-  :pdf document.txt --format=markdown # Output in markdown format
+  pdf: <file_path>                    # Extract all text from document
+  pdf: document.pdf --pages=1-5       # Extract text from pages 1-5
+  pdf: document.pdf --pages=3         # Extract text from page 3 only
+  pdf: document.docx --metadata       # Include document metadata
+  pdf: document.txt --format=markdown # Output in markdown format
 
 Supported Formats:
   • PDF (.pdf) - Using pypdf
@@ -327,8 +388,8 @@ Supported Formats:
   • OpenDocument (.odt) - Using textract
 
 Special Commands:
-  :pdf formats                        # List supported formats
-  :pdf help                          # Show this help
+  pdf: formats                        # List supported formats
+  pdf: help                          # Show this help
 
 Options:
   --pages=N or --pages=N-M           # Specify page range (PDF only)
@@ -336,21 +397,21 @@ Options:
   --format=text|markdown             # Output format
 
 Examples:
-  :pdf ~/Documents/report.pdf
-  :pdf presentation.pdf --pages=1-10 --metadata
-  :pdf article.docx --format=markdown
-  :pdf spreadsheet.txt
+  pdf: ~/Documents/report.pdf
+  pdf: presentation.pdf --pages=1-10 --metadata
+  pdf: article.docx --format=markdown
+  pdf: spreadsheet.txt
 
 Dependencies:
   • pypdf (for PDF files)
   • python-docx (for DOCX files)  
   • textract (for DOC, RTF, ODT files)
 
-MCP Integration:
-  This command supports MCP protocol for enhanced document processing
-  and can integrate with external document analysis services.
+Context Provider Integration:
+  This command provides rich context data for document processing
+  and integrates seamlessly with the Context Provider system.
 """
 
     def get_usage(self) -> str:
         """Return usage example."""
-        return ":pdf <file_path> [--pages=N-M] [--metadata] [--format=text|markdown]"
+        return "pdf: <file_path> [--pages=N-M] [--metadata] [--format=text|markdown]"

@@ -25,6 +25,8 @@ class BielikInstaller:
         self.is_linux = self.system == 'linux'
         self.project_dir = Path(__file__).parent
         self.venv_dir = self.project_dir / '.venv'
+        self.is_docker = self.detect_docker_environment()
+        self.is_externally_managed = self.detect_externally_managed_python()
         
     def log(self, message, level="INFO"):
         """Cross-platform logging with colors."""
@@ -105,31 +107,108 @@ class BielikInstaller:
             
         return managers
     
+    def detect_docker_environment(self):
+        """Detect if running inside a Docker container."""
+        try:
+            # Check for Docker-specific files
+            docker_indicators = [
+                Path('/.dockerenv'),
+                Path('/proc/1/cgroup')
+            ]
+            
+            for indicator in docker_indicators:
+                if indicator.exists():
+                    return True
+            
+            # Check cgroup for docker
+            cgroup_path = Path('/proc/1/cgroup')
+            if cgroup_path.exists():
+                content = cgroup_path.read_text()
+                if 'docker' in content or 'containerd' in content:
+                    return True
+                    
+            return False
+        except:
+            return False
+    
+    def detect_externally_managed_python(self):
+        """Detect if Python environment is externally managed (PEP 668)."""
+        try:
+            # Check for EXTERNALLY-MANAGED file
+            lib_path = Path(sys.executable).parent.parent / 'lib'
+            for python_dir in lib_path.glob('python*'):
+                externally_managed = python_dir / 'EXTERNALLY-MANAGED'
+                if externally_managed.exists():
+                    return True
+            
+            # Check if we're in a virtual environment already
+            if hasattr(sys, 'real_prefix') or (hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix):
+                return False
+                
+            return False
+        except:
+            return False
+    
     def create_virtual_environment(self):
-        """Create Python virtual environment."""
-        if self.venv_dir.exists():
+        """Create Python virtual environment with enhanced error handling."""
+        # Skip venv creation in Docker containers if already in a container environment
+        if self.is_docker:
+            self.log("Running in Docker container - checking for existing Python environment")
+            
+            # In Docker, we might not need a separate venv if packages can be installed directly
+            if not self.is_externally_managed:
+                self.log("Docker environment allows direct package installation", "SUCCESS")
+                # Use system Python directly in Docker
+                self.venv_dir = Path(sys.prefix)
+                return True
+        
+        # Check if venv already exists
+        if self.venv_dir.exists() and (self.venv_dir / ('Scripts' if self.is_windows else 'bin')).exists():
             self.log("Virtual environment already exists")
             return True
+        
+        # Handle externally managed environments
+        if self.is_externally_managed and not self.is_docker:
+            self.log("Detected externally-managed Python environment", "WARNING")
+            self.log("Creating virtual environment to avoid system package conflicts...")
             
         try:
             self.log("Creating Python virtual environment...")
-            self.run_command([self.python_exe, '-m', 'venv', str(self.venv_dir)])
-            self.log("Virtual environment created successfully", "SUCCESS")
-            return True
+            result = self.run_command([self.python_exe, '-m', 'venv', str(self.venv_dir)], check=False)
+            
+            if result and result.returncode == 0:
+                self.log("Virtual environment created successfully", "SUCCESS")
+                return True
+            else:
+                # Fallback: try with --without-pip and install pip manually
+                self.log("Standard venv creation failed, trying fallback method...", "WARNING")
+                result = self.run_command([self.python_exe, '-m', 'venv', '--without-pip', str(self.venv_dir)], check=False)
+                
+                if result and result.returncode == 0:
+                    # Download and install pip manually
+                    self.install_pip_manually()
+                    return True
+                    
+                return False
+                
         except Exception as e:
             self.log(f"Failed to create virtual environment: {e}", "ERROR")
             return False
     
     def get_venv_python(self):
         """Get path to Python executable in virtual environment."""
-        if self.is_windows:
+        if self.is_docker and self.venv_dir == Path(sys.prefix):
+            return self.python_exe
+        elif self.is_windows:
             return str(self.venv_dir / 'Scripts' / 'python.exe')
         else:
             return str(self.venv_dir / 'bin' / 'python')
     
     def get_venv_pip(self):
         """Get path to pip in virtual environment."""
-        if self.is_windows:
+        if self.is_docker and self.venv_dir == Path(sys.prefix):
+            return 'pip3' if shutil.which('pip3') else 'pip'
+        elif self.is_windows:
             return str(self.venv_dir / 'Scripts' / 'pip.exe')
         else:
             return str(self.venv_dir / 'bin' / 'pip')
@@ -144,12 +223,18 @@ class BielikInstaller:
             return self.install_with_pip()
     
     def install_with_pip(self):
-        """Install dependencies using pip."""
+        """Install dependencies using pip with enhanced error handling."""
         try:
             pip_exe = self.get_venv_pip()
+            pip_args = []
+            
+            # Add --break-system-packages if needed for externally managed environments
+            if self.is_externally_managed and not self.is_docker:
+                pip_args.extend(['--break-system-packages', '--user'])
+                self.log("Using --break-system-packages for externally managed environment", "WARNING")
             
             # Upgrade pip first
-            self.run_command([pip_exe, 'install', '--upgrade', 'pip'])
+            self.run_command([pip_exe, 'install', '--upgrade', 'pip'] + pip_args)
             
             # Install basic dependencies (without llama-cpp-python)
             basic_deps = [
@@ -167,9 +252,18 @@ class BielikInstaller:
             
             for dep in basic_deps:
                 self.log(f"Installing {dep}...")
-                self.run_command([pip_exe, 'install', dep])
+                try:
+                    self.run_command([pip_exe, 'install', dep] + pip_args)
+                except Exception as e:
+                    self.log(f"Failed to install {dep}: {e}", "WARNING")
+                    # Try with --no-deps as fallback
+                    try:
+                        self.run_command([pip_exe, 'install', '--no-deps', dep] + pip_args)
+                        self.log(f"Installed {dep} without dependencies", "WARNING")
+                    except:
+                        self.log(f"Skipping {dep} - will try alternatives", "WARNING")
             
-            self.log("Basic dependencies installed successfully", "SUCCESS")
+            self.log("Basic dependencies installation completed", "SUCCESS")
             return True
             
         except Exception as e:
@@ -355,13 +449,34 @@ class BielikInstaller:
             return False
     
     def install_bielik_package(self):
-        """Install Bielik package in development mode."""
+        """Install Bielik package in development mode with enhanced error handling."""
         try:
             pip_exe = self.get_venv_pip()
+            pip_args = []
+            
+            # Add --break-system-packages if needed for externally managed environments
+            if self.is_externally_managed and not self.is_docker:
+                pip_args.extend(['--break-system-packages', '--user'])
+                self.log("Using --break-system-packages for Bielik CLI installation", "WARNING")
+            
             self.log("Installing Bielik CLI in development mode...")
-            self.run_command([pip_exe, 'install', '-e', '.'])
-            self.log("Bielik CLI installed successfully", "SUCCESS")
-            return True
+            result = self.run_command([pip_exe, 'install', '-e', '.'] + pip_args, check=False)
+            
+            if result and result.returncode == 0:
+                self.log("Bielik CLI installed successfully", "SUCCESS")
+                return True
+            else:
+                # Fallback: try installing without -e flag
+                self.log("Development install failed, trying standard install...", "WARNING")
+                result = self.run_command([pip_exe, 'install', '.'] + pip_args, check=False)
+                
+                if result and result.returncode == 0:
+                    self.log("Bielik CLI installed successfully (standard mode)", "SUCCESS")
+                    return True
+                else:
+                    self.log("Both installation methods failed", "ERROR")
+                    return False
+                    
         except Exception as e:
             self.log(f"Failed to install Bielik CLI: {e}", "ERROR")
             return False
@@ -474,8 +589,16 @@ fi
         self.log(f"✅ System: {platform.system()} {platform.release()}")
         self.log(f"✅ Python: {sys.version.split()[0]}")
         self.log(f"✅ Project directory: {self.project_dir}")
-        self.log(f"✅ Virtual environment: {self.venv_dir}")
+        if self.is_docker:
+            self.log(f"✅ Docker environment: {self.venv_dir}")
+        else:
+            self.log(f"✅ Virtual environment: {self.venv_dir}")
         self.log("✅ Bielik CLI with Context Provider Commands")
+        
+        if self.is_externally_managed:
+            self.log("⚠️  Externally-managed Python environment detected", "WARNING")
+        if self.is_docker:
+            self.log("🐳 Docker container environment detected", "SUCCESS")
         
         if ai_installed:
             self.log("✅ AI models support (llama-cpp-python)", "SUCCESS")

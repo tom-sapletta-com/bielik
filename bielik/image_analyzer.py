@@ -209,20 +209,20 @@ class ImageAnalyzer:
                               question: Optional[str] = None) -> List[Dict[str, Any]]:
         """
         Analyze multiple images.
-        
+
         Args:
             image_paths: List of image file paths
             question: Optional question about the images
-            
+
         Returns:
             list: List of analysis results for each image
         """
         results = []
-        
+
         for image_path in image_paths:
             result = self.analyze_image(image_path, question)
             results.append(result)
-        
+
         return results
 
     def get_model_info(self) -> Dict[str, Any]:
