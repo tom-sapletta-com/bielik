@@ -16,15 +16,20 @@ def test_send_chat_local_model_missing():
     assert "llama-cpp-python not installed" in reply
 
 
-@patch('bielik.hf_models.HAS_LLAMA_CPP', True)
+@patch('bielik.cli.send_chat.HAS_LLAMA_CPP', True)
 def test_send_chat_local_model_mock():
     """Test send_chat with mocked llama-cpp-python."""
     
-    # Mock the LocalLlamaRunner
+    # Mock the LocalLlamaRunner and model manager
     mock_runner = Mock()
-    mock_runner.run_model.return_value = "Hello from local HF model"
+    mock_runner.chat.return_value = "Hello from local HF model"
     
-    with patch('bielik.hf_models.LocalLlamaRunner', return_value=mock_runner):
+    mock_manager = Mock()
+    mock_manager.is_model_downloaded.return_value = True
+    mock_manager.get_model_path.return_value = "/fake/path/model.gguf"
+    
+    with patch('bielik.hf_models.LocalLlamaRunner', return_value=mock_runner), \
+         patch('bielik.cli.send_chat.get_model_manager', return_value=mock_manager):
         messages = [{"role": "user", "content": "hi"}]
         reply = send_chat(messages, model="test-model", use_local=True)
         

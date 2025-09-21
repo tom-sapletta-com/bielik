@@ -17,14 +17,22 @@ except ImportError:
     HAVE_PIL = False
 
 try:
+    # Handle Python 3.11 compatibility issue with transformers/tensorflow
+    import warnings
+    warnings.filterwarnings("ignore", category=DeprecationWarning)
+    
     from transformers import (
         BlipProcessor, BlipForConditionalGeneration,
         AutoProcessor, AutoModelForCausalLM
     )
     import torch
     HAVE_TRANSFORMERS = True
-except ImportError:
+except (ImportError, RuntimeError, AttributeError) as e:
+    # Handle various import errors including Python 3.11 formatargspec issues
     HAVE_TRANSFORMERS = False
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.debug(f"Transformers not available: {e}")
 
 from .config import get_config, get_logger
 
