@@ -8,7 +8,7 @@ import requests
 import subprocess
 import shutil
 import platform
-from typing import List, Dict, Optional, Union
+from typing import List, Dict, Optional, Union, Any
 from pathlib import Path
 
 from .hf_models import get_model_manager, LocalLlamaRunner, HAS_LLAMA_CPP

@@ -30,11 +30,41 @@ except ImportError:
     HAVE_OLLAMA = False
 
 
-def send_chat(messages, model=None):
-    """Send chat messages to Ollama via REST API or ollama lib fallback."""
+def send_chat(messages, model=None, use_local=False):
+    """Send chat messages to Ollama or local HF model."""
     if model is None:
         model = config.BIELIK_MODEL
     
+    # Use local HF model if requested and available
+    if use_local or model in model_manager.SPEAKLEASH_MODELS:
+        if HAS_LLAMA_CPP and model_manager.is_model_downloaded(model):
+            try:
+                from .hf_models import LocalLlamaRunner
+                
+                # Get model path
+                model_path = model_manager.get_model_path(model)
+                if not model_path:
+                    return f"[LOCAL MODEL ERROR] Model {model} not found locally"
+                
+                # Initialize local runner
+                runner = LocalLlamaRunner(model_path)
+                response = runner.chat(messages)
+                logger.info(f"Local HF model response received for {model}")
+                return response
+                
+            except Exception as e:
+                logger.error(f"Local HF model failed for {model}: {e}")
+                if not use_local:  # Fall through to Ollama if not explicitly using local
+                    logger.info("Falling back to Ollama...")
+                else:
+                    return f"[LOCAL MODEL ERROR] {e}"
+        elif use_local:
+            if not HAS_LLAMA_CPP:
+                return "[LOCAL MODEL ERROR] llama-cpp-python not installed"
+            elif not model_manager.is_model_downloaded(model):
+                return f"[LOCAL MODEL ERROR] Model {model} not downloaded. Use :download {model}"
+    
+    # Use Ollama (REST API first, then library fallback)
     payload = {"model": model, "messages": messages, "stream": False}
 
     # try REST first
@@ -76,6 +106,11 @@ def show_welcome():
     print("  :status  - sprawdź połączenie z Ollama")
     print("  :setup   - uruchom interaktywną konfigurację")
     print("  :clear   - wyczyść historię rozmowy")
+    print("  :models  - pokaż dostępne modele HF")
+    print("  :download <model> - pobierz model z Hugging Face")
+    print("  :delete <model>   - usuń pobrany model")
+    print("  :switch <model>   - przełącz na model")
+    print("  :storage - pokaż statystyki pamięci")
     print("  :exit    - zakończ sesję")
     print("  Ctrl+C   - szybkie wyjście")
     print()
@@ -222,6 +257,142 @@ def pull_bielik_model():
         return False
 
 
+def show_hf_models():
+    """Display available and downloaded Hugging Face models."""
+    print("\n🤗 Modele Hugging Face - SpeakLeash:")
+    print("=" * 50)
+    
+    # Show available models
+    available = model_manager.list_available_models()
+    print("📋 Dostępne modele:")
+    for model_name, info in available.items():
+        status = "✅ Pobrany" if model_manager.is_model_downloaded(model_name) else "⬇️ Do pobrania"
+        print(f"  {model_name}")
+        print(f"    📝 {info['description']}")
+        print(f"    📊 Parametry: {info['parameters']}")
+        print(f"    📈 Status: {status}")
+        print()
+    
+    # Show downloaded models
+    downloaded = model_manager.list_downloaded_models()
+    if downloaded:
+        print("💾 Pobrane modele:")
+        for model_name, info in downloaded.items():
+            size_gb = info.get('size_bytes', 0) / (1024**3)
+            print(f"  {model_name} ({size_gb:.1f} GB)")
+            print(f"    📁 Ścieżka: {info.get('local_path', 'N/A')}")
+        print()
+
+
+def download_hf_model(model_name: str):
+    """Download a Hugging Face model."""
+    if model_name not in model_manager.SPEAKLEASH_MODELS:
+        print(f"❌ Nieznany model: {model_name}")
+        print("💡 Użyj :models aby zobaczyć dostępne modele")
+        return
+    
+    if model_manager.is_model_downloaded(model_name):
+        print(f"ℹ️  Model {model_name} jest już pobrany.")
+        force = input("Czy pobrać ponownie? (t/N): ").lower()
+        if force not in ['t', 'tak', 'y', 'yes']:
+            return
+        force_download = True
+    else:
+        force_download = False
+    
+    print(f"⬇️ Pobieranie modelu {model_name}...")
+    try:
+        model_info = model_manager.download_model(model_name, force=force_download)
+        if model_info:
+            size_gb = model_info.size_bytes / (1024**3)
+            print(f"✅ Model pobrany pomyślnie! ({size_gb:.1f} GB)")
+            print(f"📁 Ścieżka: {model_info.local_path}")
+        else:
+            print("❌ Nie udało się pobrać modelu")
+    except Exception as e:
+        logger.error(f"Error downloading model: {e}")
+        print(f"❌ Błąd pobierania: {e}")
+
+
+def delete_hf_model(model_name: str):
+    """Delete a downloaded Hugging Face model."""
+    if not model_manager.is_model_downloaded(model_name):
+        print(f"❌ Model {model_name} nie jest pobrany")
+        return
+    
+    # Get model info for confirmation
+    downloaded = model_manager.list_downloaded_models()
+    if model_name in downloaded:
+        size_gb = downloaded[model_name].get('size_bytes', 0) / (1024**3)
+        print(f"🗑️  Czy na pewno usunąć model {model_name} ({size_gb:.1f} GB)?")
+        confirm = input("Potwierdź (t/N): ").lower()
+        if confirm not in ['t', 'tak', 'y', 'yes']:
+            print("❌ Anulowano usuwanie")
+            return
+    
+    try:
+        if model_manager.delete_model(model_name):
+            print(f"✅ Model {model_name} usunięty pomyślnie")
+        else:
+            print(f"❌ Nie udało się usunąć modelu {model_name}")
+    except Exception as e:
+        logger.error(f"Error deleting model: {e}")
+        print(f"❌ Błąd usuwania: {e}")
+
+
+def show_storage_stats():
+    """Show storage statistics for HF models."""
+    print("\n💾 Statystyki pamięci:")
+    print("=" * 30)
+    
+    try:
+        stats = model_manager.get_storage_stats()
+        print(f"📊 Pobrane modele: {stats['downloaded_count']}")
+        print(f"💽 Całkowity rozmiar: {stats['total_size_gb']:.1f} GB")
+        print(f"📁 Katalog modeli: {stats['models_dir']}")
+        
+        if stats['models']:
+            print("\n📋 Szczegóły modeli:")
+            for model_name, info in stats['models'].items():
+                size_gb = info['size_bytes'] / (1024**3)
+                print(f"  {model_name}: {size_gb:.1f} GB")
+    except Exception as e:
+        logger.error(f"Error getting storage stats: {e}")
+        print(f"❌ Błąd pobierania statystyk: {e}")
+
+
+def switch_model(model_name: str):
+    """Switch to a different model (HF or Ollama)."""
+    # Check if it's an HF model
+    if model_name in model_manager.SPEAKLEASH_MODELS:
+        if not model_manager.is_model_downloaded(model_name):
+            print(f"❌ Model {model_name} nie jest pobrany")
+            print("💡 Użyj :download {model_name} aby go pobrać")
+            return
+        
+        if not HAS_LLAMA_CPP:
+            print("❌ llama-cpp-python nie jest zainstalowane")
+            print("💡 Zainstaluj: pip install llama-cpp-python")
+            return
+        
+        # Update global model (this is a simple demo - in real app you'd update client)
+        global DEFAULT_MODEL
+        DEFAULT_MODEL = model_name
+        print(f"🔄 Przełączono na lokalny model HF: {model_name}")
+        print("💡 Model będzie używany przy następnych zapytaniach")
+        
+    else:
+        # Assume it's an Ollama model
+        models = get_installed_models()
+        if model_name not in models:
+            print(f"❌ Model Ollama {model_name} nie jest zainstalowany")
+            print("💡 Zainstaluj: ollama pull {model_name}")
+            return
+        
+        DEFAULT_MODEL = model_name
+        print(f"🔄 Przełączono na model Ollama: {model_name}")
+
+
 def interactive_setup():
     """Interactive setup process for first-time users."""
     print("🔍 Sprawdzanie konfiguracji systemu...")
@@ -366,6 +537,17 @@ Przykłady użycia:
         help=f"Adres serwera Ollama (domyślny: {OLLAMA_HOST})"
     )
     
+    parser.add_argument(
+        "--use-local",
+        action="store_true",
+        help="Użyj lokalnego modelu HF zamiast Ollama"
+    )
+    
+    parser.add_argument(
+        "--local-model",
+        help="Nazwa lokalnego modelu HF do użycia"
+    )
+    
     return parser.parse_args()
 
 
@@ -377,6 +559,12 @@ def main():
     DEFAULT_MODEL = args.model
     OLLAMA_HOST = args.host
     CHAT_ENDPOINT = OLLAMA_HOST.rstrip("/") + "/v1/chat/completions"
+    
+    # Handle local model arguments
+    use_local_model = args.use_local
+    if args.local_model:
+        DEFAULT_MODEL = args.local_model
+        use_local_model = True
     
     show_welcome()
     
@@ -471,6 +659,33 @@ def main():
                     print("🔧 Uruchamianie interaktywnej konfiguracji...")
                     interactive_setup()
                     continue
+                elif user == ":models":
+                    show_hf_models()
+                    continue
+                elif user.startswith(":download"):
+                    parts = user.split(None, 1)
+                    if len(parts) > 1:
+                        download_hf_model(parts[1])
+                    else:
+                        print("❓ Użyj: :download <nazwa_modelu>")
+                    continue
+                elif user.startswith(":delete"):
+                    parts = user.split(None, 1)
+                    if len(parts) > 1:
+                        delete_hf_model(parts[1])
+                    else:
+                        print("❓ Użyj: :delete <nazwa_modelu>")
+                    continue
+                elif user == ":storage":
+                    show_storage_stats()
+                    continue
+                elif user.startswith(":switch"):
+                    parts = user.split(None, 1)
+                    if len(parts) > 1:
+                        switch_model(parts[1])
+                    else:
+                        print("❓ Użyj: :switch <nazwa_modelu>")
+                    continue
                 else:
                     help_msg = (f"❓ Nieznana komenda: {user}. "
                                 "Wpisz :help aby zobaczyć dostępne komendy.")
@@ -483,7 +698,7 @@ def main():
             messages.append({"role": "user", "content": enhanced_user_content})
             print("🦅 Bielik thinking...", end="", flush=True)
 
-            resp = send_chat(messages, model=config.BIELIK_MODEL)
+            resp = send_chat(messages, model=DEFAULT_MODEL, use_local=use_local_model)
             print("\r🦅 Bielik: " + " "*20)  # Clear "thinking" message
             print(f"    {resp}")
 
