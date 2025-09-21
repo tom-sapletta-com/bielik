@@ -1,0 +1,77 @@
+# Testing Dockerfile for Bielik CLI - comprehensive testing environment
+FROM python:3.11-slim as base
+
+# Install system dependencies for document processing and testing
+RUN apt-get update && apt-get install -y \
+    curl \
+    wget \
+    git \
+    build-essential \
+    libmagic1 \
+    libmagic-dev \
+    poppler-utils \
+    antiword \
+    unrtf \
+    tesseract-ocr \
+    flac \
+    ffmpeg \
+    lame \
+    libmad0 \
+    libsox-fmt-mp3 \
+    sox \
+    libjpeg-dev \
+    swig \
+    libpulse-dev \
+    file \
+    vim \
+    nano \
+    htop \
+    tree \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Copy project files
+COPY pyproject.toml setup.cfg MANIFEST.in README.md LICENSE ./
+COPY bielik/ ./bielik/
+COPY commands/ ./commands/
+COPY tests/ ./tests/
+
+# Install package with dependencies (without optional llama-cpp-python)
+RUN pip install --no-cache-dir -e . && \
+    pip install --no-cache-dir pytest pytest-cov pytest-mock flake8 black isort
+
+# Create test data directory structure
+RUN mkdir -p /app/test-data/documents && \
+    mkdir -p /app/test-data/samples && \
+    mkdir -p /app/models && \
+    mkdir -p /app/bielik_projects && \
+    mkdir -p /app/.bielik
+
+# Create sample test files for document processing
+RUN echo "Sample text file for testing PDF command.\nThis is a test document with multiple lines.\nLorem ipsum dolor sit amet." > /app/test-data/documents/sample.txt && \
+    echo "# Sample Markdown File\n\nThis is a **test** markdown document.\n\n## Features\n- Item 1\n- Item 2" > /app/test-data/documents/sample.md
+
+# Create non-root user for testing
+RUN useradd -m -u 1000 bielik && \
+    chown -R bielik:bielik /app && \
+    chmod -R 755 /app
+
+# Testing stage with all tools
+FROM base as testing
+USER bielik
+
+# Set environment variables for testing
+ENV PYTHONPATH=/app
+ENV BIELIK_DATA_DIR=/app/.bielik
+ENV BIELIK_MODELS_DIR=/app/models
+ENV BIELIK_PROJECTS_DIR=/app/bielik_projects
+
+# Default command starts interactive shell
+CMD ["/bin/bash"]
+
+# Automated testing stage
+FROM testing as automated
+COPY docker-test-runner.py /app/
+CMD ["python", "/app/docker-test-runner.py"]

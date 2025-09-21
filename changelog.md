@@ -8,6 +8,27 @@
 
 ---
 
+## 🚀 **Version 0.1.21** - *2025-09-21* - **PDF CRASH FIX & STABILITY**
+
+### 🐛 **CRITICAL BUG FIXES**
+- **Fixed PDF command crash** - Added missing `validate_file_path()`, `get_file_size()`, and `get_file_extension()` methods
+- **Resolved application exit** when using `pdf:` command without file argument
+- **Improved error handling** in document processing commands
+
+### 🔧 **IMPROVEMENTS**
+- **Enhanced Context Provider Commands** - All commands (`pdf:`, `calc:`, `folder:`) now work seamlessly with project integration
+- **Better optional dependency handling** - Clearer messaging about llama-cpp-python being optional
+- **Comprehensive testing** - Full workflow verification for all Context Provider Commands
+- **Stability improvements** - More robust error handling across document processing features
+
+### ✅ **VERIFICATION**
+- All Context Provider Commands tested and working
+- Project management system integration verified
+- Document processing commands stable and reliable
+- No more application crashes on empty `pdf:` command
+
+---
+
 ## 🚀 **Version 0.1.19** - *2024-12-XX* - **PROJECT MANAGEMENT SYSTEM**
 
 ### 🎯 **MAJOR NEW FEATURE: Session-Based Project Management**

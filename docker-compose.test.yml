@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  bielik-test:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      target: testing
+    container_name: bielik-test-env
+    stdin_open: true
+    tty: true
+    volumes:
+      # Persistent data volumes
+      - bielik-models:/app/models
+      - bielik-projects:/app/bielik_projects
+      - bielik-data:/app/.bielik
+      - bielik-env:/app/.env_data
+      # Test data volume
+      - ./test-data:/app/test-data
+      # Source code mount for development
+      - ./:/app
+    environment:
+      - PYTHONPATH=/app
+      - BIELIK_DATA_DIR=/app/.bielik
+      - BIELIK_MODELS_DIR=/app/models
+      - BIELIK_PROJECTS_DIR=/app/bielik_projects
+    ports:
+      - "8888:8888"
+    command: /bin/bash
+    working_dir: /app
+
+  # Standalone CLI test runner
+  bielik-cli-test:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      target: testing
+    container_name: bielik-cli-test
+    volumes:
+      - bielik-models:/app/models
+      - bielik-projects:/app/bielik_projects
+      - bielik-data:/app/.bielik
+      - ./test-data:/app/test-data
+    environment:
+      - PYTHONPATH=/app
+      - BIELIK_DATA_DIR=/app/.bielik
+      - BIELIK_MODELS_DIR=/app/models
+      - BIELIK_PROJECTS_DIR=/app/bielik_projects
+    command: python /app/docker-test-runner.py
+
+volumes:
+  bielik-models:
+    driver: local
+  bielik-projects:
+    driver: local
+  bielik-data:
+    driver: local
+  bielik-env:
+    driver: local
+
+networks:
+  default:
+    name: bielik-test-network

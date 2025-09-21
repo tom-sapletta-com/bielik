@@ -412,3 +412,28 @@ Context Provider Integration:
     def get_usage(self) -> str:
         """Return usage example."""
         return "pdf: <file_path> [--pages=N-M] [--metadata] [--format=text|markdown]"
+    
+    def validate_file_path(self, file_path: str) -> tuple[bool, str]:
+        """Validate if file path exists and is accessible."""
+        try:
+            path = Path(file_path).expanduser().resolve()
+            if not path.exists():
+                return False, f"File not found: {file_path}"
+            if not path.is_file():
+                return False, f"Path is not a file: {file_path}"
+            if not os.access(path, os.R_OK):
+                return False, f"File is not readable: {file_path}"
+            return True, ""
+        except Exception as e:
+            return False, f"Invalid file path: {e}"
+    
+    def get_file_size(self, file_path: str) -> int:
+        """Get file size in bytes."""
+        try:
+            return Path(file_path).expanduser().resolve().stat().st_size
+        except Exception:
+            return 0
+    
+    def get_file_extension(self, file_path: str) -> str:
+        """Get file extension in lowercase."""
+        return Path(file_path).suffix.lower()

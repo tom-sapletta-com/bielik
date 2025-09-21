@@ -17,20 +17,29 @@ def test_send_chat_local_model_missing():
 
 
 @patch('bielik.cli.send_chat.HAS_LLAMA_CPP', True)
-@patch('bielik.hf_models.HAS_LLAMA_CPP', True)
+@patch('bielik.hf_models.HAS_LLAMA_CPP', True)  
 def test_send_chat_local_model_mock():
     """Test send_chat with mocked llama-cpp-python."""
     
-    # Mock the LocalLlamaRunner and model manager
+    # Mock the Llama class to avoid import errors
+    mock_llama_class = Mock()
+    mock_llama_instance = Mock()
+    mock_llama_class.return_value = mock_llama_instance
+    
+    # Mock the LocalLlamaRunner to use our mocked response
     mock_runner = Mock()
     mock_runner.chat.return_value = "Hello from local HF model"
     
+    # Mock the model manager
     mock_manager = Mock()
     mock_manager.is_model_downloaded.return_value = True
     mock_manager.get_model_path.return_value = "/fake/path/model.gguf"
+    mock_manager.get_available_models.return_value = ["test-model"]
     
-    with patch('bielik.hf_models.LocalLlamaRunner', return_value=mock_runner), \
-         patch('bielik.cli.send_chat.get_model_manager', return_value=mock_manager):
+    with patch('bielik.hf_models.Llama', mock_llama_class), \
+         patch('bielik.hf_models.LocalLlamaRunner', return_value=mock_runner), \
+         patch('bielik.cli.send_chat.get_model_manager', return_value=mock_manager), \
+         patch('bielik.hf_models.get_model_manager', return_value=mock_manager):
         messages = [{"role": "user", "content": "hi"}]
         reply = send_chat(messages, model="test-model", use_local=True)
         
