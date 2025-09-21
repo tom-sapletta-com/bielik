@@ -1,5 +1,5 @@
 ![terminal](terminal.png)
-# 🦅 bielik
+# 🦅 Bielik
 
 [![PyPI](https://img.shields.io/pypi/v/bielik.svg)](https://pypi.org/project/bielik/)
 [![Python](https://img.shields.io/pypi/pyversions/bielik.svg)](https://www.python.org/)
@@ -14,7 +14,15 @@
 **Author:** Tom Sapletta  
 **License:** Apache-2.0
 
-> 🇵🇱 **Bielik** is a local chat client for **[Ollama](https://ollama.com)** with CLI and web interfaces, created specifically for the Polish language model **[Bielik](https://huggingface.co/speakleash)** from **[Speakleash](https://speakleash.org/)**.
+> 🇵🇱 **Bielik** is a powerful Polish AI Assistant that downloads and runs **[Polish language models](https://huggingface.co/speakleash)** from **[HuggingFace](https://huggingface.co)**, created specifically for the **[Bielik](https://huggingface.co/speakleash)** models from **[Speakleash](https://speakleash.org/)**.
+
+**🚀 Key Features:**
+- 🎯 **HuggingFace Integration** - Direct model downloads from HF Hub
+- 💬 **Polish Language Optimized** - Built for Polish conversation and analysis  
+- 🖼️ **Vision Capabilities** - Image analysis and visual question answering
+- 📁 **Document Processing** - PDF, DOCX, web content analysis
+- 🐳 **Docker Ready** - Containerized testing environments
+- ⚡ **Lightweight** - Minimal (~50MB) or Full (~2GB) installation options
 
 ---
 
@@ -22,32 +30,32 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                          🦅 BIELIK                              │
+│                       🦅 BIELIK SYSTEM                          │
 ├─────────────────────┬───────────────────────┬───────────────────┤
-│   🖥️  CLI Shell     │  🌐 FastAPI Server   │  🧪 Test Suite     │
+│   🖥️  CLI Shell     │  🌐 FastAPI Server   │  🐳 Docker Tests   │
 │  ┌─────────────────┐│ ┌───────────────────┐ │ ┌───────────────┐ │
-│  │ • Interactive   ││ │ • REST /chat      │ │ │ • Unit tests  │ │
-│  │ • Help system   ││ │ • WebSocket /ws   │ │ │ • Mock API    │ │
-│  │ • Cross-platform││ │ • Port 8888       │ │ │ • CI/CD       │ │
+│  │ • Interactive   ││ │ • REST /chat      │ │ │ • Minimal     │ │
+│  │ • Personalized  ││ │ • WebSocket /ws   │ │ │ • Full        │ │
+│  │ • Multi-modal   ││ │ • Port 8000       │ │ │ • CI/CD       │ │
 │  └─────────────────┘│ └───────────────────┘ │ └───────────────┘ │
 └─────────────────────┴───────────────────────┴───────────────────┘
             │                       │                       │
             ▼                       ▼                       ▼
 ┌───────────────────────────────────────────────────────────────┐
-│                    🔄 CONNECTION LAYER                        │
+│                🤗 HUGGINGFACE INTEGRATION                     │
 │  ┌──────────────────────┐    ┌─────────────────────────────┐  │
-│  │    REST API (main)   │◄──►│   Ollama Library (fallback) │  │
-│  │ ┌─ HTTP requests     │    │ ┌─ ollama.chat()            │  │
-│  │ └─ /v1/chat/...      │    │ └─ Direct integration       │  │
+│  │   Direct Downloads   │◄──►│     Local Model Execution   │  │
+│  │ ┌─ HF Hub API        │    │ ┌─ Transformers Pipeline    │  │
+│  │ └─ Model Management  │    │ └─ Vision Models (optional) │  │
 │  └──────────────────────┘    └─────────────────────────────┘  │
 └─────────────────────┬─────────────────────────────────────────┘
                       ▼
 ┌───────────────────────────────────────────────────────────────┐
-│                   🦙 OLLAMA SERVER                            │
+│                 📚 POLISH LANGUAGE MODELS                      │
 │  ┌─────────────────────────────────────────────────────────┐  │
-│  │ 📍 localhost:11434 (default)                            │  │
-│  │ 🤖 Model: bielik (Polish LLM)                           │  │
-│  │ 🔗 Links: Speakleash → HuggingFace → Ollama             │  │
+│  │ 🤖 Speakleash/Bielik Models (HuggingFace Hub)          │  │
+│  │ 🔗 Direct: HuggingFace → Local Storage → Execution     │  │
+│  │ 🎯 Polish-optimized conversation and analysis          │  │
 │  └─────────────────────────────────────────────────────────┘  │
 └───────────────────────────────────────────────────────────────┘
 ```
@@ -59,221 +67,265 @@
 **Bielik** is a groundbreaking Polish language model created by **[Speakleash](https://speakleash.org/)** - a foundation dedicated to the development of Polish artificial intelligence.
 
 ### 🔗 External Dependencies & Links:
-- **[Ollama](https://ollama.com)** - Local LLM runtime that hosts the Bielik model
-- **[Bielik Model on HuggingFace](https://huggingface.co/speakleash)** - Official model repository
-- **[Speakleash Foundation](https://speakleash.org/)** - Creators of the Bielik model
+- **[HuggingFace Hub](https://huggingface.co)** - Primary source for Polish language models
+- **[Bielik Models on HuggingFace](https://huggingface.co/speakleash)** - Official model repository
+- **[Speakleash Foundation](https://speakleash.org/)** - Creators of the Bielik models
 - **[Polish AI Initiative](https://www.gov.pl/web/ai)** - Government support for Polish AI
 
 ### 🚀 How it Works:
-1. **Bielik package** connects to your local **Ollama server**
-2. **Ollama** runs the **Bielik model** (downloaded from HuggingFace via Speakleash)
-3. **Chat interface** (CLI/Web) sends queries → **Ollama API** → **Bielik model** → responses
-4. **Fallback system** ensures connectivity (REST API → ollama library)
+1. **Bielik CLI** connects directly to **HuggingFace Hub**
+2. **Models** are downloaded from **Speakleash** organization on HuggingFace
+3. **Local execution** uses **Transformers** library (optional for vision)
+4. **Chat interface** (CLI/Web) → **Local Models** → **Polish responses**
+5. **Modular design** supports text-only or full vision capabilities
 
 ---
 
 ## 📌 Features
 
-- **🎯 Auto-Setup System** — Intelligent first-time setup for beginners
-  - **🔍 Detection** — Automatically detects missing components
-  - **📦 Installation** — Cross-platform Ollama installation (Linux/macOS)
-  - **🚀 Configuration** — Downloads and configures Bielik model
-  - **🛠️ Interactive** — User-friendly prompts and error handling
-- **🖥️ Enhanced CLI** `bielik` — Interactive chat shell with modular architecture
-  - **📋 Commands** — `:help`, `:status`, `:setup`, `:clear`, `:exit`, `:models`, `:download`, `:delete`, `:switch`
-  - **⚙️ Arguments** — `--setup`, `--no-setup`, `--model`, `--host`, `--use-local`, `--local-model`
-  - **🤗 HF Integration** — Direct Hugging Face model management and local execution
-  - **🔄 Fallback** — REST API primary, ollama lib secondary, local models tertiary
+- **🎯 HuggingFace Integration** — Direct model downloads and management
+  - **🔍 Model Discovery** — Browse available Polish language models
+  - **📦 Smart Downloads** — Automatic model caching and versioning
+  - **🚀 Auto-Switch** — Automatically switches to newly downloaded models
+  - **🛠️ Interactive** — User-friendly model selection on first startup
+- **🖥️ Enhanced CLI** `python -m bielik` — Personalized chat experience
+  - **📋 Commands** — `:help`, `:models`, `:download`, `:delete`, `:switch`, `:settings`, `:name`
+  - **⚙️ Personalization** — Custom user names, dynamic assistant names
+  - **🤗 HF Management** — Direct HuggingFace model operations
+  - **📁 Content Analysis** — Folder scanning, document processing
   - **🌍 Cross-platform** — Windows, macOS, Linux support
+- **🖼️ Vision Capabilities** (Full version only)
+  - **🔍 Image Analysis** — Automatic image captioning in Polish
+  - **❓ Visual QA** — Ask questions about images
+  - **🎨 Multi-modal** — Combined text and image understanding
+  - **⚡ GPU Support** — Hardware acceleration for faster processing
 - **🐍 Python API** — Programmatic access via `BielikClient` class
   - **💬 Chat methods** — `chat()`, `query()`, conversation management
-  - **🔧 System control** — Status checking, auto-setup, model management
-  - **🤗 HF Models** — Download, manage, and run SpeakLeash models locally
-  - **📤 Export** — Conversation history in JSON, text, markdown formats
-- **🌐 Web Server** (FastAPI on port 8888):  
+  - **🔧 Model control** — Download, switch, and manage models
+  - **🤗 HF Models** — Full HuggingFace integration
+  - **📤 Export** — Conversation history in multiple formats
+- **🌐 Web Server** (FastAPI on port 8000):  
   - **📡 REST** — `POST /chat` endpoint for JSON communication
   - **⚡ WebSocket** — `WS /ws` for real-time chat
-  - **🔄 Fallback** — Same dual connectivity as CLI
-- **🧪 Quality Assurance** — Comprehensive testing and development tools
-  - **✅ Unit tests** — Full coverage with mocked APIs
-  - **🔧 CI/CD** — GitHub Actions automation
-  - **📊 Code quality** — Flake8 linting, automated builds  
+  - **🖼️ Multi-modal** — Support for text and image inputs
+- **🐳 Docker Support** — Complete containerized testing
+  - **📦 Minimal Version** — Lightweight text-only container (~50MB)
+  - **🎯 Full Version** — Complete vision-enabled container (~2GB)
+  - **🔧 CI/CD** — Automated testing environments  
 
 ---
 
-## ⚙️ Installation
+## ⚙️ Installation Options
+
+Bielik offers **two installation modes** to suit different needs:
+
+### 🪶 **Minimal Version** (Recommended for most users)
+
+**~50MB installation** - Perfect for text-based Polish AI conversations:
 
 ```bash
+# Install minimal version (text-only)
 pip install bielik
+
+# Start CLI and download your first model
+python -m bielik
 ```
 
-Optional dependency (official Ollama lib):
+**What's included:**
+- ✅ Polish conversation and text analysis
+- ✅ HuggingFace model downloads and management  
+- ✅ Document processing (PDF, DOCX, TXT)
+- ✅ Web content analysis
+- ✅ Folder structure analysis
+- ✅ Personalized CLI experience
+- ❌ Image analysis (can be added later)
+
+### 🎯 **Full Version** (For image analysis)
+
+**~2GB+ installation** - Complete AI assistant with vision capabilities:
 
 ```bash
-pip install "bielik[ollama]"
+# Install full version (text + vision)
+pip install bielik[vision]
+
+# Start CLI with image analysis support
+python -m bielik
+```
+
+**What's included:**
+- ✅ **Everything from minimal version**
+- ✅ **Image analysis and captioning**
+- ✅ **Visual question answering**
+- ✅ **GPU acceleration support**
+- ✅ **Multi-modal document processing**
+
+### 🔄 **Upgrade Anytime**
+
+Start minimal and upgrade when needed:
+
+```bash
+# Upgrade minimal → full
+pip install bielik[vision]
+
+# Or install specific optional features
+pip install bielik[local]    # Local model execution
+pip install bielik[gpu]      # GPU acceleration
+pip install bielik[dev]      # Development tools
 ```
 
 ---
 
 ## 🚀 Quick Start Guide
 
-### 🎯 **NEW: Automatic Setup (Recommended)**
+### 🎯 **Instant Start** (No setup required!)
 
-The easiest way to get started is with the new automatic setup system:
+Bielik now works **without any external dependencies**. Just install and start chatting:
 
 ```bash
-# Install Bielik package
+# Install minimal version
 pip install bielik
 
-# Start with automatic setup - it will handle everything!
-bielik
-
-# Or force setup mode:
-bielik --setup
+# Start CLI and choose your first model
+python -m bielik
 ```
 
-The auto-setup system will:
-- ✅ **Detect** if Ollama is installed
-- ✅ **Install Ollama** automatically (Linux/macOS) 
-- ✅ **Start Ollama server** if not running
-- ✅ **Download Bielik model** (`SpeakLeash/bielik-7b-instruct-v0.1-gguf`)
-- ✅ **Configure** everything for optimal performance
+**What happens on first run:**
+- 🔍 **Model Selection** — Choose from available Polish models
+- 📥 **Auto Download** — Selected model downloads from HuggingFace
+- 🔄 **Auto Switch** — Automatically switches to the new model
+- 💬 **Ready to Chat** — Start conversing in Polish immediately!
 
-### 📋 Manual Setup (Advanced Users)
+### 📱 **Choose Your Experience**
 
-If you prefer manual control:
-
-#### 1️⃣ Install Ollama (Cross-platform)
-
-**Windows:**
-```powershell
-# Download installer from ollama.com or use winget:
-winget install Ollama.Ollama
-```
-
-**macOS:**
+#### 🪶 **Minimal Setup** (Recommended)
+Perfect for text conversations and document analysis:
 ```bash
-# Download .dmg from ollama.com or use Homebrew:
-brew install ollama
-```
-
-**Linux:**
-```bash
-# Ubuntu/Debian:
-curl -fsSL https://ollama.com/install.sh | sh
-
-# Arch Linux:
-sudo pacman -S ollama
-```
-
-#### 2️⃣ Setup Bielik Model
-
-```bash
-# Start Ollama service (Linux/macOS):
-ollama serve
-
-# Windows: Ollama starts automatically
-
-# Install Bielik model (new full model name):
-ollama pull SpeakLeash/bielik-7b-instruct-v0.1-gguf
-
-# Verify installation:
-ollama list
-```
-
-#### 3️⃣ Install & Use Bielik Package
-
-```bash
-# Install from PyPI:
+# 1. Install
 pip install bielik
 
-# Start CLI chat:
-bielik
+# 2. Start and download your first model
+python -m bielik
+:download speakleash/bielik-4.5b-v3.0-instruct
 
-# Skip auto-setup if you prefer manual control:
-bielik --no-setup
+# 3. Start chatting in Polish!
+Cześć! Jak mogę Ci pomóc?
+```
 
-# Or start web server:
-uvicorn bielik.server:app --port 8888
+#### 🎯 **Full Setup** (For image analysis)
+Includes vision capabilities for image analysis:
+```bash
+# 1. Install with vision support
+pip install bielik[vision]
+
+# 2. Start and download models
+python -m bielik
+:download speakleash/bielik-4.5b-v3.0-instruct
+
+# 3. Analyze images
+Przeanalizuj to zdjęcie: image.jpg
+```
+
+#### 🐳 **Docker Setup** (For testing)
+Use Docker for isolated testing environments:
+```bash
+# Clone repository
+git clone https://github.com/tomsapletta/bielik.git
+cd bielik
+
+# Test minimal version
+docker-compose --profile minimal up bielik-minimal
+
+# Test full version  
+docker-compose --profile full up bielik-full
 ```
 
 ---
 
 ## 💻 Usage
 
-### 🖥️ CLI Features & Options
+### 🖥️ CLI Commands & Options
 
-#### Command-Line Arguments (when starting bielik)
+#### Starting Bielik
 
 ```bash
 # Basic usage
-bielik                                    # Start interactive chat with auto-setup
+python -m bielik                         # Start interactive chat
+bielik                                   # Alternative (if in PATH)
 
-# Advanced options
-bielik --setup                           # Force setup mode
-bielik --no-setup                        # Skip automatic setup
-bielik --model other-model               # Use different model
-bielik --host http://other-host:11434    # Use different Ollama server
-bielik --use-local                       # Use local HuggingFace models (bypass Ollama)
-bielik --local-model model-name          # Specify local model to use
-bielik --help                            # Show all options
+# Advanced options  
+python -m bielik --help                  # Show all options
 ```
 
-#### Interactive Commands (inside bielik chat session)
+#### Interactive Commands (inside chat session)
 
-**⚠️ Important:** These commands only work **inside** the interactive chat session, not as command-line arguments.
-
+**📋 Model Management:**
 ```bash
-# Start interactive session first
-$ bielik
+:models                    # List available HuggingFace models
+:download <model-name>     # Download model from HuggingFace
+:switch <model-name>       # Switch to downloaded model
+:delete <model-name>       # Delete model from local storage
+```
 
-# Then use these commands inside the chat:
-🧑 You: :help             # Show help and commands
-🧑 You: :status           # Check Ollama connection and model availability
-🧑 You: :setup            # Run interactive setup system
-🧑 You: :models           # List available and downloaded HuggingFace models
-🧑 You: :download <model> # Download a SpeakLeash model from Hugging Face
-🧑 You: :delete <model>   # Delete a downloaded model
-🧑 You: :switch <model>   # Switch to a different model for execution
-🧑 You: :storage          # Show model storage statistics
-🧑 You: :clear            # Clear conversation history
-🧑 You: :exit             # Quit (or Ctrl+C)
+**⚙️ Personalization:**
+```bash
+:name <your-name>          # Set your display name
+:settings                  # Show current configuration
+```
+
+**🛠️ Utilities:**
+```bash
+:help                      # Show all commands
+:clear                     # Clear conversation history
+:exit                      # Quit (or Ctrl+C)
 ```
 
 #### Usage Examples
 
+**First Time Setup:**
 ```bash
-# ✅ Correct - Start with specific model
-$ bielik --model SpeakLeash/Bielik-4.5B-v3.0-Instruct-GGUF
+$ python -m bielik
+# Choose from recommended models:
+# 1. speakleash/bielik-4.5b-v3.0-instruct (Recommended)
+# 2. speakleash/bielik-7b-instruct-v0.1
+# Enter choice: 1
 
-# ✅ Correct - Interactive commands inside session
-$ bielik
-🧑 You: :status
-🧑 You: :switch SpeakLeash/Bielik-4.5B-v3.0-Instruct-GGUF
+🔄 Downloading speakleash/bielik-4.5b-v3.0-instruct...
+✅ Model ready! Switching to bielik-4.5b-v3.0-instruct
 
-# ❌ Incorrect - Interactive commands as CLI arguments
-$ bielik :status          # This won't work!
-$ bielik :switch model    # This won't work!
+👤 You: Cześć! Jak się masz?
+🤖 bielik-4.5b: Cześć! Mam się dobrze, dziękuję...
+```
+
+**Everyday Usage:**
+```bash
+👤 You: :name Jan
+✅ Display name set to: Jan
+
+👤 Jan: Przeanalizuj folder ~/dokumenty
+🤖 bielik-4.5b: [Analyzes folder structure and contents]
+
+👤 Jan: Opisz to zdjęcie: vacation.jpg  # (Full version only)
+🤖 bielik-4.5b: [Describes image in Polish]
 ```
 
 ### 🐍 Python API
 
-**NEW:** Use Bielik programmatically in your Python applications:
+Use Bielik programmatically in your Python applications:
 
 ```python
 from bielik.client import BielikClient
 
-# Create client with auto-setup
+# Create client (auto-downloads model if needed)
 client = BielikClient()
 
-# Send a message
-response = client.chat("How are you?")
+# Send a Polish message
+response = client.chat("Napisz krótki wiersz o Polsce")
 print(response)
 
-# Get system status
+# Get model status
 status = client.get_status()
-print(f"Ollama running: {status['ollama_running']}")
-print(f"Model available: {status['model_available']}")
+print(f"Current model: {status['current_model']}")
+print(f"Models available: {status['models_available']}")
 
 # Export conversation
 history = client.export_conversation(format="markdown")
@@ -281,121 +333,188 @@ history = client.export_conversation(format="markdown")
 
 **Quick functions:**
 ```python
-from bielik.client import quick_chat, get_system_status
+from bielik.client import quick_chat
 
-# One-off query
-response = quick_chat("What is artificial intelligence?")
-
-# Check system without setup
-status = get_system_status()
+# One-off Polish query
+response = quick_chat("Co to jest sztuczna inteligencja?")
+print(response)
 ```
 
 **BielikClient Options:**
-- `model`: Model name to use
-- `host`: Ollama server URL  
-- `auto_setup`: Enable/disable automatic setup (default: True)
+- `model`: Specific HuggingFace model to use
+- `auto_download`: Auto-download model if missing (default: True)
 
-### Web API
+### 🌐 Web Server
 
 ```bash
-uvicorn bielik.server:app --port 8888
+# Start web server
+uvicorn bielik.server:app --port 8000
+
+# Or with Docker
+docker-compose --profile minimal up bielik-minimal
 ```
 
 **Endpoints:**
 - `POST /chat` - JSON chat endpoint
 - `WS /ws` - WebSocket real-time chat
+- `GET /models` - List available models
 
 **Example request:**
 ```json
-{"messages": [{"role":"user","content":"Hello!"}]}
+{"messages": [{"role":"user","content":"Cześć! Jak się masz?"}]}
+```
+
+### 🐳 Docker Usage
+
+**Quick Testing:**
+```bash
+# Test minimal version
+docker run -it bielik:minimal
+
+# Test full version with GPU
+docker run --gpus all -it bielik:full
+```
+
+**With persistent storage:**
+```bash
+# Minimal with model persistence
+docker run -it -v $(pwd)/models:/app/models bielik:minimal
+
+# Full with models and images
+docker run -it \
+  -v $(pwd)/models:/app/models \
+  -v $(pwd)/images:/app/images \
+  bielik:full
+```
+
+**Development setup:**
+```bash
+# Clone and test
+git clone https://github.com/tomsapletta/bielik.git
+cd bielik
+
+# Run automated tests
+docker-compose --profile test up test-runner
+
+# Interactive development
+docker-compose --profile minimal run --rm bielik-minimal bash
 ```
 
 ---
 
 ## 🔧 Environment Variables
 
-* `OLLAMA_HOST` — default: `http://localhost:11434`
-* `BIELIK_MODEL` — default: `SpeakLeash/bielik-7b-instruct-v0.1-gguf`
+**Core Settings:**
+* `BIELIK_CLI_USERNAME` — Your display name in CLI (auto-detected from system)
+* `BIELIK_CLI_CURRENT_MODEL` — Currently selected model
+* `BIELIK_CLI_ASSISTANT_NAME` — Assistant display name (auto-set from model)
+* `BIELIK_CLI_AUTO_SWITCH` — Auto-switch to newly downloaded models (default: true)
+
+**Storage & Cache:**
+* `BIELIK_MODELS_DIR` — Local model storage directory
+* `BIELIK_DATA_DIR` — User data and settings directory
+* `HF_HOME` — HuggingFace cache directory
+
+**Docker Environment:**
+* `BIELIK_MODE` — `minimal` or `full` (Docker only)
+* `BIELIK_IMAGES_DIR` — Images directory for analysis (full version)
 
 ---
 
 ## 🛠️ Troubleshooting
 
-### Auto-Setup Issues
+### Installation Issues
 
-**Problem:** Auto-setup fails to install Ollama
+**Problem:** Minimal version works but vision features don't
 ```bash
-# Manual installation required for Windows
-# Download from: https://ollama.com/download/windows
+# Upgrade to full version
+pip install bielik[vision]
 
-# Linux/macOS alternatives:
-curl -fsSL https://ollama.com/install.sh | sh  # Linux
-brew install ollama                             # macOS
+# Verify vision packages
+python -c "import PIL, transformers; print('Vision packages OK')"
 ```
 
 **Problem:** Model download fails or times out
 ```bash
-# Try manual download with longer timeout
-ollama pull SpeakLeash/bielik-7b-instruct-v0.1-gguf
+# Check HuggingFace connectivity
+python -c "from huggingface_hub import HfApi; print('HF connection OK')"
 
-# Check available disk space (model is ~4GB)
+# Check available disk space (models are 2-8GB)
 df -h
 
-# Check network connection
-curl -I https://ollama.com
+# Manual download with timeout
+:download speakleash/bielik-4.5b-v3.0-instruct
 ```
 
-**Problem:** Ollama server won't start
+**Problem:** "No models available" on first startup
 ```bash
-# Check if port 11434 is in use
-lsof -i :11434  # Linux/macOS
-netstat -an | findstr 11434  # Windows
-
-# Try different port
-OLLAMA_HOST=http://localhost:11435 ollama serve --port 11435
+# Download a model manually
+python -m bielik
+:models
+:download speakleash/bielik-4.5b-v3.0-instruct
 ```
 
 ### Runtime Issues
 
-**Problem:** "Connection refused" errors
+**Problem:** Model responses are slow or use too much memory
 ```bash
-# Check Ollama status
-bielik :status
+# Use smaller model
+:switch speakleash/bielik-4.5b-v3.0-instruct  # instead of 7b
 
-bielik :switch SpeakLeash/Bielik-4.5B-v3.0-Instruct-GGUF
-
-# Restart Ollama service
-pkill ollama && ollama serve  # Linux/macOS
-
-# Manual server start
-ollama serve
-```
-
-**Problem:** Model responses are slow
-```bash
 # Check system resources
 htop      # Linux/macOS
 taskmgr   # Windows
 
-# Use smaller model if needed
-bielik --model llama2  # If available
+# Enable GPU acceleration (full version)
+pip install bielik[gpu]
 ```
 
-**Problem:** Python API import errors
+**Problem:** Image analysis not working
 ```bash
-# Reinstall with dependencies
-pip uninstall bielik
-pip install bielik[ollama]
+# Check if vision packages installed
+python -c "from bielik.image_analyzer import ImageAnalyzer; ia = ImageAnalyzer(); print(f'Available: {ia.is_available()}')"
 
-# Check Python path
-python -c "import bielik.client; print('OK')"
+# Install vision support
+pip install bielik[vision]
+```
+
+**Problem:** CLI settings not persisting
+```bash
+# Check .env file creation
+ls -la ~/.bielik/ || ls -la ./
+
+# Reset settings
+:name YourName
+:settings
+```
+
+### Docker Issues
+
+**Problem:** Docker containers fail to start
+```bash
+# Build images manually
+docker build -f docker/Dockerfile.minimal -t bielik:minimal .
+docker build -f docker/Dockerfile.full -t bielik:full .
+
+# Check container logs
+docker logs bielik-minimal
+```
+
+**Problem:** Models not persisting between Docker runs
+```bash
+# Use volume mounts
+docker run -v $(pwd)/models:/app/models bielik:minimal
+
+# Or use Docker Compose
+docker-compose --profile minimal up
 ```
 
 ### Getting Help
 
 - **GitHub Issues:** [Report bugs and feature requests](https://github.com/tomsapletta/bielik/issues)
-- **Command Help:** `bielik --help` or `:help` in CLI
-- **System Status:** Use `:status` command or `get_system_status()` function
+- **Command Help:** `python -m bielik --help` or `:help` in CLI
+- **Test Environment:** Use Docker for isolated testing
+- **Check Status:** Use `:settings` command for current configuration
 
 ---
 

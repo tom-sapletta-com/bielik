@@ -1,5 +1,5 @@
 import pytest
-from bielik import cli
+from bielik.cli.send_chat import send_chat
 
 class DummyResponse:
     def __init__(self, data, status_code=200):
@@ -25,7 +25,7 @@ def test_send_chat_rest(monkeypatch):
     monkeypatch.setattr("requests.post", fake_post)
 
     messages = [{"role": "user", "content": "hi"}]
-    reply = cli.send_chat(messages, model="bielik")
+    reply = send_chat(messages, model="bielik")
     assert "REST" in reply or "Hello" in reply
 
 
@@ -38,9 +38,11 @@ def test_send_chat_rest_fail_then_fallback(monkeypatch):
         def chat(self, model, messages):
             return {"message": {"content": "Hello from ollama lib"}}
 
-    monkeypatch.setitem(cli.__dict__, "HAVE_OLLAMA", True)
-    monkeypatch.setitem(cli.__dict__, "ollama", DummyOllama())
+    # Import the module to patch it
+    from bielik.cli import send_chat as send_chat_module
+    monkeypatch.setattr(send_chat_module, "HAVE_OLLAMA", True)
+    monkeypatch.setattr(send_chat_module, "ollama", DummyOllama())
 
     messages = [{"role": "user", "content": "hi"}]
-    reply = cli.send_chat(messages, model="bielik")
+    reply = send_chat(messages, model="bielik")
     assert "ollama lib" in reply

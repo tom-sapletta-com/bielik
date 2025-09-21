@@ -145,8 +145,8 @@ class CommandProcessor:
             self.model_manager.show_storage_stats()
             return True, None, messages
         
-        # Switch command
-        elif command.startswith(":switch"):
+        # Switch command (and :model alias)
+        elif command.startswith(":switch") or command.startswith(":model"):
             parts = command.split(None, 1)
             if len(parts) > 1:
                 new_model = self.model_manager.switch_model(parts[1], current_model)
@@ -156,7 +156,8 @@ class CommandProcessor:
                     print(f"✅ Assistant name updated to: {self.settings.get_assistant_name()}")
                 return True, new_model, messages
             else:
-                print("❓ Usage: :switch <model_name>")
+                cmd_name = ":switch" if command.startswith(":switch") else ":model"
+                print(f"❓ Usage: {cmd_name} <model_name>")
                 return True, None, messages
         
         # Name command - change user display name
