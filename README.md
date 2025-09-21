@@ -55,7 +55,7 @@
 
 ## 🤖 About Bielik Model
 
-**Bielik** to przełomowy polski model językowy stworzony przez **[Speakleash](https://speakleash.org/)** - fundację zajmującą się rozwojem polskiej sztucznej inteligencji.
+**Bielik** is a groundbreaking Polish language model created by **[Speakleash](https://speakleash.org/)** - a foundation dedicated to the development of Polish artificial intelligence.
 
 ### 🔗 External Dependencies & Links:
 - **[Ollama](https://ollama.com)** - Local LLM runtime that hosts the Bielik model
@@ -230,7 +230,7 @@ from bielik.client import BielikClient
 client = BielikClient()
 
 # Send a message
-response = client.chat("Jak się masz?")
+response = client.chat("How are you?")
 print(response)
 
 # Get system status
@@ -247,7 +247,7 @@ history = client.export_conversation(format="markdown")
 from bielik.client import quick_chat, get_system_status
 
 # One-off query
-response = quick_chat("Co to jest sztuczna inteligencja?")
+response = quick_chat("What is artificial intelligence?")
 
 # Check system without setup
 status = get_system_status()

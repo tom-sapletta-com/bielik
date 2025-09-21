@@ -12,9 +12,15 @@ import platform
 import shutil
 import argparse
 
-OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
-DEFAULT_MODEL = os.environ.get("BIELIK_MODEL", "SpeakLeash/bielik-7b-instruct-v0.1-gguf")
-CHAT_ENDPOINT = OLLAMA_HOST.rstrip("/") + "/v1/chat/completions"
+from .config import get_config, get_logger
+from .content_processor import get_content_processor
+from .hf_models import get_model_manager, HAS_LLAMA_CPP
+
+# Global configuration and logger
+config = get_config()
+logger = get_logger(__name__)
+content_processor = get_content_processor()
+model_manager = get_model_manager()
 
 # try to import official ollama client
 try:
@@ -24,30 +30,37 @@ except ImportError:
     HAVE_OLLAMA = False
 
 
-def send_chat(messages, model=DEFAULT_MODEL):
+def send_chat(messages, model=None):
     """Send chat messages to Ollama via REST API or ollama lib fallback."""
+    if model is None:
+        model = config.BIELIK_MODEL
+    
     payload = {"model": model, "messages": messages, "stream": False}
 
     # try REST first
     try:
-        resp = requests.post(CHAT_ENDPOINT, json=payload, timeout=30)
+        resp = requests.post(config.CHAT_ENDPOINT, json=payload, timeout=config.REQUEST_TIMEOUT)
         resp.raise_for_status()
         data = resp.json()
         choice = data.get("choices", [{}])[0]
         msg = choice.get("message", {}).get("content")
         if msg:
+            logger.debug(f"REST API successful for model {model}")
             return msg
     except Exception as e:
-        print(f"[REST API failed: {e}]")
+        logger.warning(f"REST API failed: {e}")
 
     # fallback: official ollama library
     if HAVE_OLLAMA:
         try:
             response = ollama.chat(model=model, messages=messages)
+            logger.debug(f"Ollama library successful for model {model}")
             return response["message"]["content"]
         except Exception as e:
+            logger.error(f"Ollama library failed: {e}")
             return f"[OLLAMA LIB ERROR] {e}"
 
+    logger.error("No working Ollama integration available")
     return "[ERROR] No working Ollama integration (REST and lib failed)."
 
 
@@ -295,20 +308,24 @@ def check_ollama_status():
     """Check if Ollama is running and accessible."""
     try:
         # Quick health check
-        resp = requests.get(f"{OLLAMA_HOST.rstrip('/')}/api/tags", timeout=5)
+        resp = requests.get(f"{config.OLLAMA_HOST.rstrip('/')}/api/tags", timeout=5)
         if resp.status_code == 200:
             data = resp.json()
             models = [m['name'] for m in data.get('models', [])]
-            target_model = DEFAULT_MODEL
+            target_model = config.BIELIK_MODEL
             if any(target_model.lower() in model.lower() for model in models):
-                return f"✅ Ollama działa, model {target_model} dostępny"
+                logger.info(f"Ollama status check: Model {target_model} available")
+                return f"✅ Ollama running, model {target_model} available"
             else:
-                available = ', '.join(models[:3]) if models else "brak"
-                return f"⚠️ Ollama działa, ale brak modelu '{target_model}'. Dostępne: {available}"
+                available = ', '.join(models[:3]) if models else "none"
+                logger.warning(f"Ollama running but model {target_model} not found")
+                return f"⚠️ Ollama running, but model '{target_model}' missing. Available: {available}"
         else:
-            return f"❌ Ollama odpowiada, ale błąd HTTP {resp.status_code}"
+            logger.error(f"Ollama HTTP error: {resp.status_code}")
+            return f"❌ Ollama responds but HTTP error {resp.status_code}"
     except Exception as e:
-        return f"❌ Ollama niedostępny: {str(e)}"
+        logger.error(f"Ollama connection failed: {e}")
+        return f"❌ Ollama unavailable: {str(e)}"
 
 
 def parse_args():
@@ -460,10 +477,13 @@ def main():
                     print(help_msg)
                     continue
 
-            messages.append({"role": "user", "content": user})
-            print("🦅 Bielik myśli...", end="", flush=True)
+            # Process content in user message (URLs, file paths)
+            enhanced_user_content = content_processor.process_content_in_text(user)
+            
+            messages.append({"role": "user", "content": enhanced_user_content})
+            print("🦅 Bielik thinking...", end="", flush=True)
 
-            resp = send_chat(messages, model=DEFAULT_MODEL)
+            resp = send_chat(messages, model=config.BIELIK_MODEL)
             print("\r🦅 Bielik: " + " "*20)  # Clear "thinking" message
             print(f"    {resp}")
 

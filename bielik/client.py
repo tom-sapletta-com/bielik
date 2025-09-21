@@ -9,16 +9,22 @@ import subprocess
 import shutil
 import platform
 from typing import List, Dict, Optional, Union
+from pathlib import Path
+
+from .hf_models import get_model_manager, LocalLlamaRunner, HAS_LLAMA_CPP
+from .config import get_config, get_logger
 
 
 class BielikClient:
     """
-    Python client for interacting with Bielik AI assistant through Ollama.
+    Python client for interacting with Bielik AI assistant.
+    Supports both Ollama integration and direct Hugging Face model execution.
     
     This class provides a programmatic interface to:
     - Check system configuration
     - Automatically setup missing components
-    - Send chat messages to the Bielik model
+    - Download and manage SpeakLeash models from Hugging Face
+    - Send chat messages using Ollama or local models
     - Manage conversation history
     """
     
@@ -26,19 +32,34 @@ class BielikClient:
         self, 
         model: str = None, 
         host: str = None,
-        auto_setup: bool = True
+        auto_setup: bool = True,
+        use_local: bool = False,
+        local_model_kwargs: Dict = None
     ):
         """
         Initialize Bielik client.
         
         Args:
-            model: Model name to use (default: SpeakLeash/bielik-7b-instruct-v0.1-gguf)
+            model: Model name to use (Ollama model or HF model name)
             host: Ollama server host (default: http://localhost:11434)
             auto_setup: Whether to automatically setup missing components
+            use_local: Use local HF models instead of Ollama
+            local_model_kwargs: Additional parameters for local model initialization
         """
-        self.model = model or os.environ.get("BIELIK_MODEL", "SpeakLeash/bielik-7b-instruct-v0.1-gguf")
-        self.host = host or os.environ.get("OLLAMA_HOST", "http://localhost:11434")
+        self.config = get_config()
+        self.logger = get_logger(__name__)
+        
+        self.model = model or self.config.BIELIK_MODEL
+        self.host = host or self.config.OLLAMA_HOST
         self.chat_endpoint = self.host.rstrip("/") + "/v1/chat/completions"
+        self.use_local = use_local
+        self.local_model_kwargs = local_model_kwargs or {}
+        
+        # Initialize model manager
+        self.model_manager = get_model_manager()
+        
+        # Local model runner (initialized when needed)
+        self.local_runner = None
         
         # Try to import ollama client
         try:
@@ -224,6 +245,36 @@ class BielikClient:
         
         return True
     
+    def _initialize_local_runner(self) -> bool:
+        """Initialize local model runner if needed."""
+        if self.local_runner is not None:
+            return True
+        
+        if not HAS_LLAMA_CPP:
+            self.logger.error("llama-cpp-python not available for local model execution")
+            return False
+        
+        # Check if model is a local HF model name
+        if self.model in self.model_manager.SPEAKLEASH_MODELS:
+            model_path = self.model_manager.get_model_path(self.model)
+            if not model_path:
+                self.logger.warning(f"Model {self.model} not downloaded locally")
+                return False
+        else:
+            # Assume it's a direct path to GGUF file
+            model_path = self.model
+            if not Path(model_path).exists():
+                self.logger.error(f"Model file not found: {model_path}")
+                return False
+        
+        try:
+            self.logger.info(f"Initializing local runner for: {model_path}")
+            self.local_runner = LocalLlamaRunner(model_path, **self.local_model_kwargs)
+            return True
+        except Exception as e:
+            self.logger.error(f"Failed to initialize local runner: {e}")
+            return False
+    
     def send_message(self, message: str, add_to_history: bool = True) -> str:
         """
         Send a message to Bielik and get response.
@@ -239,11 +290,24 @@ class BielikClient:
         request_messages = self.messages.copy()
         request_messages.append({"role": "user", "content": message})
         
+        # Use local model if requested and available
+        if self.use_local:
+            if self._initialize_local_runner():
+                try:
+                    response_content = self.local_runner.chat(request_messages)
+                    if add_to_history:
+                        self.messages.append({"role": "user", "content": message})
+                        self.messages.append({"role": "assistant", "content": response_content})
+                    return response_content
+                except Exception as e:
+                    self.logger.error(f"Local model failed: {e}")
+                    # Fall through to Ollama methods
+        
         # Try REST API first
         payload = {"model": self.model, "messages": request_messages, "stream": False}
         
         try:
-            resp = requests.post(self.chat_endpoint, json=payload, timeout=30)
+            resp = requests.post(self.chat_endpoint, json=payload, timeout=self.config.REQUEST_TIMEOUT)
             resp.raise_for_status()
             data = resp.json()
             choice = data.get("choices", [{}])[0]
@@ -254,6 +318,7 @@ class BielikClient:
                     self.messages.append({"role": "assistant", "content": response_content})
                 return response_content
         except Exception as e:
+            self.logger.warning(f"REST API failed: {e}")
             # Fallback to ollama client if available
             if self.have_ollama:
                 try:
@@ -264,6 +329,7 @@ class BielikClient:
                         self.messages.append({"role": "assistant", "content": response_content})
                     return response_content
                 except Exception as e2:
+                    self.logger.error(f"Ollama client failed: {e2}")
                     return f"[OLLAMA CLIENT ERROR] {e2}"
             return f"[REST API ERROR] {e}"
     
@@ -274,6 +340,117 @@ class BielikClient:
     def query(self, message: str) -> str:
         """Send a one-off query without affecting conversation history."""
         return self.send_message(message, add_to_history=False)
+    
+    # Hugging Face Model Management Methods
+    
+    def list_available_hf_models(self) -> Dict[str, Dict[str, str]]:
+        """List all available SpeakLeash models on Hugging Face."""
+        return self.model_manager.list_available_models()
+    
+    def list_downloaded_hf_models(self) -> Dict[str, Any]:
+        """List all downloaded HF models."""
+        return self.model_manager.list_downloaded_models()
+    
+    def download_hf_model(self, model_name: str, force: bool = False) -> bool:
+        """
+        Download a SpeakLeash model from Hugging Face.
+        
+        Args:
+            model_name: Name of the model to download
+            force: Force re-download even if model exists
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        model_info = self.model_manager.download_model(model_name, force=force)
+        return model_info is not None
+    
+    def delete_hf_model(self, model_name: str) -> bool:
+        """Delete a downloaded HF model."""
+        return self.model_manager.delete_model(model_name)
+    
+    def switch_to_hf_model(self, model_name: str, **local_kwargs) -> bool:
+        """
+        Switch to using a local HF model.
+        
+        Args:
+            model_name: Name of the HF model to use
+            **local_kwargs: Additional parameters for local model initialization
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        if not self.model_manager.is_model_downloaded(model_name):
+            self.logger.warning(f"Model {model_name} not downloaded. Use download_hf_model() first.")
+            return False
+        
+        # Clear existing local runner
+        if self.local_runner:
+            del self.local_runner
+            self.local_runner = None
+        
+        # Update configuration
+        self.model = model_name
+        self.use_local = True
+        self.local_model_kwargs = local_kwargs
+        
+        # Test initialization
+        if self._initialize_local_runner():
+            self.logger.info(f"Switched to local HF model: {model_name}")
+            return True
+        else:
+            self.logger.error(f"Failed to switch to HF model: {model_name}")
+            return False
+    
+    def switch_to_ollama_model(self, model_name: str, host: str = None):
+        """
+        Switch to using an Ollama model.
+        
+        Args:
+            model_name: Name of the Ollama model to use
+            host: Ollama server host (optional)
+        """
+        # Clear local runner
+        if self.local_runner:
+            del self.local_runner
+            self.local_runner = None
+        
+        # Update configuration
+        self.model = model_name
+        self.use_local = False
+        if host:
+            self.host = host
+            self.chat_endpoint = self.host.rstrip("/") + "/v1/chat/completions"
+        
+        self.logger.info(f"Switched to Ollama model: {model_name}")
+    
+    def get_model_storage_stats(self) -> Dict[str, Any]:
+        """Get storage statistics for downloaded HF models."""
+        return self.model_manager.get_storage_stats()
+    
+    def get_current_model_info(self) -> Dict[str, Any]:
+        """Get information about the currently configured model."""
+        info = {
+            "model_name": self.model,
+            "use_local": self.use_local,
+            "ollama_host": self.host,
+            "has_local_runner": self.local_runner is not None,
+            "has_ollama_client": self.have_ollama
+        }
+        
+        if self.use_local and self.model in self.model_manager.SPEAKLEASH_MODELS:
+            if self.model_manager.is_model_downloaded(self.model):
+                model_info = self.model_manager.registry[self.model]
+                info.update({
+                    "local_path": model_info.local_path,
+                    "file_size_gb": model_info.size_bytes / (1024**3),
+                    "model_description": model_info.description,
+                    "model_parameters": model_info.parameters
+                })
+            else:
+                info["status"] = "not_downloaded"
+        
+        return info
     
     def get_conversation_history(self) -> List[Dict[str, str]]:
         """Get current conversation history."""

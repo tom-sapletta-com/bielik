@@ -1,0 +1,146 @@
+version: '3.8'
+
+services:
+  # Ollama server service
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+      - OLLAMA_ORIGINS=*
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+  # Bielik CLI development container
+  bielik-dev:
+    build:
+      context: .
+      target: development
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+      - BIELIK_MODEL=SpeakLeash/bielik-7b-instruct-v0.1-gguf
+      - LOG_LEVEL=DEBUG
+      - DEBUG_MODE=true
+      - VERBOSE_OUTPUT=true
+    volumes:
+      - .:/app
+      - test_data:/app/test_data
+    command: ["python", "-m", "pytest", "tests/", "-v", "--cov=bielik", "--cov-report=html"]
+
+  # Bielik web server
+  bielik-server:
+    build:
+      context: .
+      target: production
+    depends_on:
+      ollama:
+        condition: service_healthy
+    ports:
+      - "8888:8888"
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+      - BIELIK_MODEL=SpeakLeash/bielik-7b-instruct-v0.1-gguf
+      - LOG_LEVEL=INFO
+    command: ["uvicorn", "bielik.server:app", "--host", "0.0.0.0", "--port", "8888"]
+    restart: unless-stopped
+
+  # Test runner for different Python versions
+  test-python38:
+    image: python:3.8-slim
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: |
+      bash -c "
+        apt-get update && apt-get install -y curl libmagic1 &&
+        pip install -e .[all] &&
+        python -m pytest tests/ -v
+      "
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+
+  test-python39:
+    image: python:3.9-slim
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: |
+      bash -c "
+        apt-get update && apt-get install -y curl libmagic1 &&
+        pip install -e .[all] &&
+        python -m pytest tests/ -v
+      "
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+
+  test-python310:
+    image: python:3.10-slim
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: |
+      bash -c "
+        apt-get update && apt-get install -y curl libmagic1 &&
+        pip install -e .[all] &&
+        python -m pytest tests/ -v
+      "
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+
+  test-python311:
+    image: python:3.11-slim
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: |
+      bash -c "
+        apt-get update && apt-get install -y curl libmagic1 &&
+        pip install -e .[all] &&
+        python -m pytest tests/ -v
+      "
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+
+  test-python312:
+    image: python:3.12-slim
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: |
+      bash -c "
+        apt-get update && apt-get install -y curl libmagic1 &&
+        pip install -e .[all] &&
+        python -m pytest tests/ -v
+      "
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+
+volumes:
+  ollama_data:
+  test_data:
