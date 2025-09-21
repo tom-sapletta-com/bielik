@@ -6,7 +6,6 @@ Tries REST API first, falls back to `ollama` library if available.
 
 import os
 import sys
-import json
 import requests
 
 OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://localhost:11434")

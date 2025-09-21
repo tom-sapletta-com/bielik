@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request
 from fastapi.responses import JSONResponse
-import os, requests, json
+import os
+import requests
+import json
 
 OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
 CHAT_ENDPOINT = OLLAMA_HOST.rstrip("/") + "/v1/chat/completions"
