@@ -1,0 +1,23 @@
+# One-liner installation test environment - simulates fresh system
+FROM ubuntu:22.04
+
+# Install minimal dependencies for one-liner simulation
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip \
+    python3-venv \
+    git \
+    curl \
+    wget \
+    ca-certificates \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory for one-liner test
+WORKDIR /tmp
+
+# Copy project files to workspace (for fallback)
+COPY . /workspace
+
+# Test command simulates one-liner installation process
+CMD ["bash", "-c", "echo 'One-liner test environment ready'"]

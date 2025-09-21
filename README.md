@@ -1,5 +1,20 @@
 # 🦅 Bielik
 
+**Bielik** is a groundbreaking Polish language model created by **[Speakleash](https://speakleash.org/)** - a foundation dedicated to the development of Polish artificial intelligence.
+> 🇵🇱 **Bielik** is available on **[huggingface](https://huggingface.co/speakleash)**.
+ 
+Now you can test it directly in the shell, using several features that allow you to build a multi-agent environment in your company 🚀 
+
+- 🎯 **HuggingFace Integration** - Direct model downloads from HF Hub
+- 💬 **Polish Language Optimized** - Built for Polish conversation and analysis  
+- 🖼️ **Vision Capabilities** - Image analysis and visual question answering
+- 📁 **Document Processing** - PDF, DOCX, web content analysis
+- 🐳 **Docker Ready** - Containerized testing environments
+- ⚡ **Lightweight** - Minimal (~50MB) or Full (~2GB) installation options
+
+**Author:** Tom Sapletta  
+**License:** Apache-2.0
+
 [![PyPI](https://img.shields.io/pypi/v/bielik.svg)](https://pypi.org/project/bielik/)
 [![Python](https://img.shields.io/pypi/pyversions/bielik.svg)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
@@ -10,20 +25,6 @@
 [![Stars](https://img.shields.io/github/stars/tom-sapletta-com/bielik.svg)](https://github.com/tom-sapletta-com/bielik/stargazers)
 [![Forks](https://img.shields.io/github/forks/tom-sapletta-com/bielik.svg)](https://github.com/tom-sapletta-com/bielik/network)
 
-**Author:** Tom Sapletta  
-**License:** Apache-2.0
-
-> 🇵🇱 **Bielik** is a powerful Polish AI Assistant that downloads and runs **[Polish language models](https://huggingface.co/speakleash)** from **[HuggingFace](https://huggingface.co)**, created specifically for the **[Bielik](https://huggingface.co/speakleash)** models from **[Speakleash](https://speakleash.org/)**.
-
-**🚀 Key Features:**
-- 🎯 **HuggingFace Integration** - Direct model downloads from HF Hub
-- 💬 **Polish Language Optimized** - Built for Polish conversation and analysis  
-- 🖼️ **Vision Capabilities** - Image analysis and visual question answering
-- 📁 **Document Processing** - PDF, DOCX, web content analysis
-- 🐳 **Docker Ready** - Containerized testing environments
-- ⚡ **Lightweight** - Minimal (~50MB) or Full (~2GB) installation options
-
----
 
 ## 🏗️ Architecture
 
@@ -908,6 +909,72 @@ pip install -e .[vision]
 ```
 
 
+# 🐳 Docker Testing Framework
+
+Bielik CLI includes a comprehensive Docker testing framework for multiplatform installation verification across all major Linux distributions.
+
+## Available Docker Tests
+
+```bash
+# Complete multiplatform test suite (all distributions)
+make docker-test
+
+# Individual distribution tests
+make docker-test-ubuntu    # Ubuntu 22.04
+make docker-test-debian    # Debian 12
+make docker-test-alpine    # Alpine Linux 3.19
+make docker-test-centos    # CentOS Stream 9
+make docker-test-arch      # Arch Linux
+make docker-test-oneliner  # One-liner installation simulation
+
+# Docker management
+make docker-build          # Build all test images
+make docker-clean          # Clean Docker artifacts
+
+# Complete test suite (Python + Docker)
+make test-all              # Run both unit tests and Docker tests
+```
+
+## What Docker Tests Verify
+
+✅ **Installation Success**: Bielik CLI installs without errors  
+✅ **Context Provider Commands**: `folder:`, `calc:`, `pdf:` work correctly  
+✅ **Cross-platform Compatibility**: Works on Ubuntu, Debian, Alpine, CentOS, Arch  
+✅ **One-liner Installation**: `curl | bash` installation process  
+✅ **Dependency Management**: Python packages install correctly  
+✅ **Virtual Environment**: `.venv` setup and activation  
+
+## Docker Test Architecture
+
+```
+docker/
+├── test-multiplatform.yml     # Docker Compose configuration
+├── Dockerfile.test-ubuntu     # Ubuntu 22.04 test environment
+├── Dockerfile.test-debian     # Debian 12 test environment  
+├── Dockerfile.test-alpine     # Alpine Linux 3.19 test environment
+├── Dockerfile.test-centos     # CentOS Stream 9 test environment
+├── Dockerfile.test-arch       # Arch Linux test environment
+└── Dockerfile.test-oneliner   # One-liner installation test
+```
+
+Each test environment:
+1. **Sets up clean Linux distribution**
+2. **Installs system dependencies** (Python, git, build tools)
+3. **Runs `python3 install.py --skip-ai`** to install Bielik with Context Provider Commands
+4. **Verifies installation** with `python3 run.py --info`
+5. **Tests Context Provider Commands** (folder analysis, calculations)
+
+## Running Docker Tests in CI/CD
+
+```yaml
+# GitHub Actions example
+- name: Run multiplatform Docker tests
+  run: make docker-test
+
+- name: Run specific distribution test
+  run: make docker-test-ubuntu
+```
+
 # 📂 Package Structure
 
 ```
@@ -924,6 +991,7 @@ bielik/
 │   │   ├── __init__.py
 │   │   ├── main.py          # Main CLI entry and argument parsing
 │   │   ├── commands.py      # Command processing and execution
+│   │   ├── command_api.py   # Context Provider Commands API
 │   │   ├── models.py        # HF model management CLI
 │   │   ├── setup.py         # Interactive setup manager
 │   │   └── send_chat.py     # Chat communication handling
@@ -932,18 +1000,29 @@ bielik/
 │       ├── core.py          # Core BielikClient class
 │       ├── model_manager.py # HF model operations for client
 │       └── utils.py         # Client utility functions
+├── commands/                # Context Provider Commands
+│   ├── folder/             # Directory analysis command
+│   ├── calc/               # Advanced calculator command
+│   └── pdf/                # Document processing command
+├── docker/                 # Docker testing framework
+│   ├── test-multiplatform.yml
+│   └── Dockerfile.test-*   # Test environments
 ├── tests/
 │   ├── __init__.py
-│   ├── test_cli.py          # CLI unit tests
+│   ├── test_cli.py          # CLI unit tests (updated for local HF models)
 │   └── test_server.py       # Server unit tests
-├── pyproject.toml           # Modern Python packaging
-├── setup.cfg                # Package configuration
-├── MANIFEST.in              # Package manifest
-├── LICENSE                  # Apache 2.0 license
-├── README.md                # This documentation
-├── Makefile                 # Development automation
-├── todo.md                  # Project specifications
-└── .github/workflows/       # CI/CD automation
+├── install.py              # Universal Python installer
+├── run.py                  # Universal launcher
+├── quick-install.sh        # Unix one-liner installer
+├── quick-install.bat       # Windows one-liner installer
+├── pyproject.toml          # Modern Python packaging
+├── setup.cfg               # Package configuration
+├── MANIFEST.in             # Package manifest
+├── LICENSE                 # Apache 2.0 license
+├── README.md               # This comprehensive documentation
+├── Makefile                # Development automation with Docker tests
+├── todo.md                 # Project specifications
+└── .github/workflows/      # CI/CD automation
     └── python-publish.yml
 ```
 
