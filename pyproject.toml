@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel", "twine", "build"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bielik"
+version = "0.1.0"
+description = "Bielik — local Ollama chat client (CLI + web)"
+authors = [{name = "Tom Sapletta"}]
+license = {text = "Apache-2.0"}
+readme = "README.md"
+requires-python = ">=3.9"
+keywords = ["ollama", "chat", "llm", "bielik"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Communications :: Chat"
+]
+
+dependencies = [
+  "fastapi>=0.95",
+  "uvicorn[standard]>=0.22",
+  "requests>=2.28",
+  "python-dotenv>=1.0"
+]
+
+[project.optional-dependencies]
+ollama = ["ollama>=0.1"]
+
+[project.scripts]
+bielik = "bielik.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "."}
+packages = ["bielik"]
+include-package-data = true
