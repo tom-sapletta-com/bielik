@@ -20,20 +20,11 @@ from ..hf_models import get_model_manager
 
 
 def validate_model_availability(model_name: str, model_manager) -> bool:
-    """Check if a model is available (either via Ollama or HF)."""
+    """Check if a HuggingFace model is available locally."""
     try:
-        # Check if it's a HuggingFace model
+        # Check if it's a HuggingFace model and is downloaded
         if model_name in model_manager.SPEAKLEASH_MODELS:
             return model_manager.is_model_downloaded(model_name)
-        
-        # Check if it's an Ollama model by trying to connect
-        from .setup import SetupManager
-        setup_manager = SetupManager()
-        ollama_status = setup_manager.check_ollama_connection()
-        
-        if ollama_status["available"]:
-            available_models = ollama_status.get("models", [])
-            return model_name in [m.get("name", "") for m in available_models]
         
         return False
     except Exception:
@@ -41,8 +32,8 @@ def validate_model_availability(model_name: str, model_manager) -> bool:
 
 
 def find_fallback_model(model_manager):
-    """Find a working fallback model."""
-    # First try to find downloaded HF models from registry
+    """Find a working fallback HuggingFace model."""
+    # Try to find downloaded HF models from registry
     try:
         registry = model_manager.list_downloaded_models()
         if registry:
@@ -54,26 +45,11 @@ def find_fallback_model(model_manager):
     except Exception as e:
         print(f"⚠️  Could not check HF models registry: {e}")
     
-    # Then try Ollama models if available
-    try:
-        from .setup import SetupManager
-        setup_manager = SetupManager()
-        ollama_status = setup_manager.check_ollama_connection()
-        
-        if ollama_status["available"] and ollama_status.get("models"):
-            # Return the first available Ollama model
-            models = ollama_status["models"]
-            if models:
-                print(f"🔍 Found Ollama model: {models[0].get('name')}")
-                return models[0].get("name")
-    except Exception:
-        pass
-    
     return None
 
 
-def execute_prompt(prompt: str, model: str, use_local: bool = False) -> str:
-    """Execute a single prompt and return the response."""
+def execute_prompt(prompt: str, model: str, use_local: bool = True) -> str:
+    """Execute a single prompt using local HF model."""
     from .send_chat import send_chat
     from ..content_processor import get_content_processor
     from ..hf_models import HAS_LLAMA_CPP
@@ -82,6 +58,14 @@ def execute_prompt(prompt: str, model: str, use_local: bool = False) -> str:
     content_processor = get_content_processor()
     cli_settings = get_cli_settings()
     hf_model_manager = get_model_manager()
+    
+    # Check if llama-cpp-python is available
+    if not HAS_LLAMA_CPP:
+        return "[LOCAL MODEL ERROR] llama-cpp-python not installed. Install with: pip install 'bielik[local]'"
+    
+    # Check if model is downloaded
+    if not hf_model_manager.is_model_downloaded(model):
+        return f"[LOCAL MODEL ERROR] Model {model} not downloaded. Use :download {model}"
     
     # Prepare system prompt with dynamic assistant name
     assistant_name = cli_settings.get_assistant_name()
@@ -97,15 +81,8 @@ def execute_prompt(prompt: str, model: str, use_local: bool = False) -> str:
         {"role": "user", "content": enhanced_prompt}
     ]
     
-    # Smart local/API decision for Bielik models
-    if model in hf_model_manager.SPEAKLEASH_MODELS and use_local:
-        # Check if local execution is actually possible
-        if not HAS_LLAMA_CPP or not hf_model_manager.is_model_downloaded(model):
-            print(f"💡 Local model not available, trying API fallback...")
-            use_local = False  # Allow fallback to Ollama->HF API chain
-    
-    # Send to model and return response
-    return send_chat(messages, model=model, use_local=use_local)
+    # Send to local HF model
+    return send_chat(messages, model=model, use_local=True)
 
 
 def run_model_tests(model: str, use_local: bool = False) -> None:
@@ -200,18 +177,19 @@ def parse_args():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Usage Examples:
-  bielik                                    # Standard interactive session
-  bielik --model other-model               # Use different model
-  bielik --setup                           # Run interactive configuration
-  bielik --no-setup                        # Skip automatic configuration
-  bielik --use-local                       # Use local HF models
-  bielik --local-model MODEL_NAME          # Specify local model
-  bielik -p "napisz ile jest dwa razy dwa" # Execute single prompt
-  bielik --prompt "What is 2+2?"          # Execute single prompt (alias)
-  bielik -p "test" -m bielik-4.5b          # Execute prompt with specific model
-  bielik --prompt "test" --model MODEL     # Execute prompt with model (long form)
-  bielik --test-model                      # Run model performance tests
-  bielik --test-model -m custom-model      # Test specific model
+  bielik                                         # Standard interactive session with local HF models
+  bielik --model bielik-7b-instruct             # Use specific HF model
+  bielik --setup                                # Run interactive configuration
+  bielik --no-setup                             # Skip automatic configuration
+  bielik --local-model bielik-4.5b-v3.0        # Specify local HF model
+  bielik -p "napisz ile jest dwa razy dwa"     # Execute single prompt
+  bielik --prompt "What is 2+2?"               # Execute single prompt (alias)
+  bielik -p "test" -m bielik-4.5b-v3.0         # Execute prompt with specific HF model
+  bielik --prompt "test" --model bielik-7b     # Execute prompt with HF model (long form)
+  bielik --test-model                           # Run model performance tests
+  bielik --test-model -m bielik-4.5b-v3.0      # Test specific HF model
+
+Powered by HuggingFace + SpeakLeash - Local AI models for everyone!
         """
     )
     
@@ -235,16 +213,11 @@ Usage Examples:
         help="Skip automatic configuration when problems occur"
     )
     
-    parser.add_argument(
-        "--host",
-        default=config.OLLAMA_HOST,
-        help=f"Ollama server address (default: {config.OLLAMA_HOST})"
-    )
     
     parser.add_argument(
         "--use-local",
         action="store_true",
-        help="Use local HF models instead of Ollama"
+        help="Force use local HF models (default behavior)"
     )
     
     parser.add_argument(
@@ -332,64 +305,33 @@ def main():
             print(f"❌ Error running tests: {str(e)}")
             sys.exit(1)
     
-    # Update configuration if host is specified
-    if args.host != config.OLLAMA_HOST:
-        # Note: In a full implementation, we might want to update the config object
-        logger.info(f"Using custom Ollama host: {args.host}")
     
     # Show welcome message
     command_processor.show_welcome()
     
-    # Force setup if requested
+    # Force setup if requested (for HF model downloads)
     if args.setup:
-        print("🔧 Running interactive configuration...")
-        print()
-        if not setup_manager.interactive_setup():
-            print("❌ Configuration failed.")
-            return
+        print("🔧 Running HF model configuration...")
+        print("💡 Use ':download <model>' to download HuggingFace models")
+        print("💡 Available models: bielik-7b-instruct, bielik-4.5b-v3.0-instruct")
         print()
     
-    # Check system status and offer setup if needed
+    # Check local HF model availability
     if not args.no_setup:
-        status = setup_manager.check_system_status(current_model)
-        print(f"🔗 Status: {status}")
+        # Simple check for llama-cpp-python and downloaded models
+        from ..hf_models import HAS_LLAMA_CPP
         
-        if "❌" in status:
+        if not HAS_LLAMA_CPP:
+            print("❌ llama-cpp-python not installed")
+            print("💡 Install with: pip install 'bielik[local]'")
             print()
-            
-            try:
-                setup_choice = input("🤔 Would you like to run automatic configuration? (Y/n): ").strip().lower()
-                if setup_choice not in ['n', 'no']:
-                    print()
-                    if setup_manager.interactive_setup():
-                        # Recheck status after setup
-                        status = setup_manager.check_system_status(current_model)
-                        print(f"🔗 New status: {status}")
-                        print()
-                    else:
-                        print("❌ Automatic configuration failed.")
-            except (EOFError, KeyboardInterrupt):
-                print("\n❌ Configuration interrupted by user")
-                return
-
-    # If still having issues, offer to continue anyway
-    if "❌" in setup_manager.check_system_status(current_model):
-        print("📖 Manual repair instructions:")
-        print("  1. Install Ollama: https://ollama.com")
-        print("  2. Run: ollama serve")
-        print(f"  3. Install model: ollama pull {current_model}")
-        print("  4. Check: ollama list")
-        print()
-
-        try:
-            continue_anyway = input("Continue despite problems? (y/N): ")
-            if continue_anyway.lower() not in ['y', 'yes']:
-                print("Session ended. Fix configuration and try again.")
-                return
-        except (EOFError, KeyboardInterrupt):
-            print("\nSession ended.")
-            return
-        print()
+        elif not hf_model_manager.is_model_downloaded(current_model):
+            print(f"❌ Model '{current_model}' not downloaded locally")
+            print(f"💡 Download with: :download {current_model}")
+            print()
+        else:
+            print("✅ Local HF model ready")
+            print()
 
     print("🚀 Ready to chat! Write something...")
     print("─" * 53)

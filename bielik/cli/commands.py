@@ -30,15 +30,14 @@ class CommandProcessor:
         
         print("🦅 " + "="*50)
         print(f"   {assistant_name.upper()} - Polish AI Assistant")
-        print("   Powered by Ollama + HF + Speakleash")
+        print("   Powered by HuggingFace + SpeakLeash")
         print("="*53)
         print()
         print(f"👋 Welcome {user_name}!")
         print()
         print("📋 Available Commands:")
         print("  :help    - show this help")
-        print("  :status  - check Ollama connection")
-        print("  :setup   - run interactive configuration")
+        print("  :setup   - show HF model setup information")
         print("  :clear   - clear conversation history")
         print("  :models  - show available HF models")
         print("  :download <model> - download HF model (auto-switches)")
@@ -55,7 +54,7 @@ class CommandProcessor:
         print("  • Write in Polish - AI understands Polish!")
         print("  • Ask questions, request help, chat naturally")
         print("  • Include image/folder paths for automatic analysis")
-        print("  • If Ollama doesn't work, you'll see an error message")
+        print("  • Local HF models provide fast, private AI responses")
         print()
     
     def process_command(self, command: str, messages: List[Dict], current_model: str) -> Tuple[bool, Optional[str], List[Dict]]:
@@ -85,12 +84,6 @@ class CommandProcessor:
             self.show_welcome()
             return True, None, messages
         
-        # Status command
-        elif command == ":status":
-            status = self.setup_manager.check_system_status()
-            print(f"🔗 Status: {status}")
-            return True, None, messages
-        
         # Clear command
         elif command == ":clear":
             system_prompt = ("You are Bielik, a helpful Polish AI assistant. "
@@ -99,10 +92,40 @@ class CommandProcessor:
             print("🧹 Conversation history cleared.")
             return True, None, new_messages
         
-        # Setup command
+        # Setup command - show HF model setup information
         elif command == ":setup":
-            print("🔧 Running interactive configuration...")
-            self.setup_manager.interactive_setup()
+            print("🔧 HuggingFace Model Setup Information:")
+            print()
+            print("📦 Available SpeakLeash Models:")
+            print("  • bielik-7b-instruct")
+            print("  • bielik-4.5b-v3.0-instruct")
+            print()
+            print("💡 How to get started:")
+            print("  1. Download a model: :download bielik-4.5b-v3.0-instruct")
+            print("  2. Switch to model: :switch bielik-4.5b-v3.0-instruct")
+            print("  3. Start chatting!")
+            print()
+            print("🔍 Check current status:")
+            print("  • :models - show available models")
+            print("  • :storage - show storage usage")
+            print("  • :settings - show current configuration")
+            print()
+            # Check current setup
+            from ..hf_models import HAS_LLAMA_CPP, get_model_manager
+            hf_manager = get_model_manager()
+            
+            if not HAS_LLAMA_CPP:
+                print("❌ llama-cpp-python not installed")
+                print("💡 Install with: pip install 'bielik[local]'")
+            else:
+                print("✅ llama-cpp-python is available")
+                
+            downloaded = hf_manager.list_downloaded_models()
+            if downloaded:
+                print(f"✅ {len(downloaded)} model(s) downloaded")
+            else:
+                print("⚠️  No models downloaded yet")
+            print()
             return True, None, messages
         
         # Models command
@@ -201,6 +224,6 @@ class CommandProcessor:
     def get_available_commands(self) -> List[str]:
         """Get list of available commands."""
         return [
-            ":help", ":status", ":setup", ":clear", ":models",
+            ":help", ":setup", ":clear", ":models",
             ":download", ":delete", ":switch", ":storage", ":exit", ":quit", ":q"
         ]
