@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "bielik"
-version = "0.1.2"
+version = "0.1.3"
 description = "Bielik — local Ollama chat client (CLI + web)"
 authors = [{name = "Tom Sapletta"}]
 license = "Apache-2.0"
@@ -40,7 +40,10 @@ dependencies = [
   # "textract>=1.6.3,<2.0.0; sys_platform != 'win32'",  # Disabled due to dependency conflicts
   "pypdf>=3.0.0,<4.0.0",
   "python-docx>=0.8.11,<1.0.0",
-  "huggingface_hub>=0.16.0,<1.0.0"
+  "huggingface_hub>=0.16.0,<1.0.0",
+  "Pillow>=9.0.0,<11.0.0",
+  "transformers>=4.25.0,<5.0.0",
+  "torch>=1.12.0,<3.0.0"
 ]
 
 [project.optional-dependencies]

@@ -31,6 +31,9 @@ build:
 	python3 -m build
 	@echo "✅ Package built successfully!"
 
+publish2: ## Publish project to PyPI
+	@bash scripts/publish.sh
+
 publish: clean build
 	@echo "🚀 Publishing to PyPI..."
 	twine upload dist/*

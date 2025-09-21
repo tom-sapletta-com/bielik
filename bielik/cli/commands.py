@@ -9,6 +9,7 @@ including special commands like :help, :status, :models, etc.
 from typing import List, Dict, Optional, Tuple
 from .setup import SetupManager
 from .models import ModelManager
+from .settings import get_cli_settings
 from ..config import get_config, get_logger
 
 
@@ -20,13 +21,19 @@ class CommandProcessor:
         self.logger = get_logger(__name__)
         self.setup_manager = SetupManager()
         self.model_manager = ModelManager()
+        self.settings = get_cli_settings()
         
     def show_welcome(self) -> None:
         """Display welcome message and help for beginners."""
+        assistant_name = self.settings.get_assistant_name()
+        user_name = self.settings.get_user_name()
+        
         print("🦅 " + "="*50)
-        print("   BIELIK - Polish AI Assistant")
+        print(f"   {assistant_name.upper()} - Polish AI Assistant")
         print("   Powered by Ollama + Speakleash")
         print("="*53)
+        print()
+        print(f"👋 Welcome {user_name}!")
         print()
         print("📋 Available Commands:")
         print("  :help    - show this help")
@@ -34,16 +41,19 @@ class CommandProcessor:
         print("  :setup   - run interactive configuration")
         print("  :clear   - clear conversation history")
         print("  :models  - show available HF models")
-        print("  :download <model> - download HF model")
+        print("  :download <model> - download HF model (auto-switches)")
         print("  :delete <model>   - delete downloaded model")
         print("  :switch <model>   - switch to model")
         print("  :storage - show storage statistics")
+        print("  :name <name>      - change your display name")
+        print("  :settings         - show current settings")
         print("  :exit    - end session")
         print("  Ctrl+C   - quick exit")
         print()
         print("💡 Tips:")
-        print("  • Write in Polish - Bielik understands Polish!")
+        print("  • Write in Polish - AI understands Polish!")
         print("  • Ask questions, request help, chat naturally")
+        print("  • Include image/folder paths for automatic analysis")
         print("  • If Ollama doesn't work, you'll see an error message")
         print()
     
@@ -99,11 +109,24 @@ class CommandProcessor:
             self.model_manager.show_models()
             return True, None, messages
         
-        # Download command
+        # Download command with auto-switch
         elif command.startswith(":download"):
             parts = command.split(None, 1)
             if len(parts) > 1:
-                self.model_manager.download_model(parts[1])
+                model_name = parts[1]
+                success = self.model_manager.download_model(model_name)
+                
+                # Auto-switch to downloaded model if enabled and download was successful
+                if success and self.settings.should_auto_switch_after_download():
+                    print(f"🔄 Auto-switching to downloaded model: {model_name}")
+                    new_model = self.model_manager.get_full_model_name(model_name)
+                    if new_model:
+                        self.settings.set_current_model(new_model)
+                        print(f"✅ Switched to model: {self.settings.get_assistant_name()}")
+                        return True, new_model, messages
+                    else:
+                        print("⚠️ Could not determine full model name for auto-switch")
+                
             else:
                 print("❓ Usage: :download <model_name>")
             return True, None, messages

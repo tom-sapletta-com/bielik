@@ -43,6 +43,14 @@ try:
 except ImportError:
     HAS_DOCX = False
 
+# Import new analysis modules
+try:
+    from .image_analyzer import get_image_analyzer
+    from .folder_scanner import get_folder_scanner
+    HAS_ANALYSIS_MODULES = True
+except ImportError:
+    HAS_ANALYSIS_MODULES = False
+
 from .config import get_config, get_logger
 
 
@@ -364,11 +372,160 @@ class ContentProcessor:
                 if content:
                     enhanced_parts.append(f"\n--- Content from {path} ---\n{content}\n--- End of {path} ---\n")
         
+        # Find image paths in text
+        if HAS_ANALYSIS_MODULES:
+            image_analyzer = get_image_analyzer()
+            if image_analyzer.is_available():
+                image_pattern = r'(?:\.?/|\w:)[^\s<>"{}|\\^`[\]]+\.(?:jpg|jpeg|png|gif|bmp|webp|svg|tiff|ico|heic|heif)'
+                image_paths = re.findall(image_pattern, text, re.IGNORECASE)
+                
+                for image_path in image_paths:
+                    image_path = image_path.strip()
+                    if os.path.exists(image_path) and image_analyzer.is_image_file(image_path):
+                        if self.config.VERBOSE_OUTPUT:
+                            self.logger.info(f"Found image path in text: {image_path}")
+                        
+                        image_content = self.analyze_image(image_path)
+                        if image_content:
+                            enhanced_parts.append(f"\n--- Image Analysis: {image_path} ---\n{image_content}\n--- End of image analysis ---\n")
+        
+        # Find folder paths in text
+        if HAS_ANALYSIS_MODULES:
+            folder_scanner = get_folder_scanner()
+            folder_pattern = r'(?:\.?/|\w:)[^\s<>"{}|\\^`[\]]+/?'
+            potential_paths = re.findall(folder_pattern, text)
+            
+            for path in potential_paths:
+                path = path.strip().rstrip('/')
+                if os.path.exists(path) and os.path.isdir(path):
+                    if self.config.VERBOSE_OUTPUT:
+                        self.logger.info(f"Found folder path in text: {path}")
+                    
+                    folder_content = self.analyze_folder(path)
+                    if folder_content:
+                        enhanced_parts.append(f"\n--- Folder Analysis: {path} ---\n{folder_content}\n--- End of folder analysis ---\n")
+        
         return '\n'.join(enhanced_parts)
+    
+    def analyze_image(self, image_path: str, question: Optional[str] = None) -> Optional[str]:
+        """
+        Analyze an image using HuggingFace vision models.
+        
+        Args:
+            image_path: Path to image file
+            question: Optional question about the image
+            
+        Returns:
+            str: Image analysis text or None if failed
+        """
+        if not HAS_ANALYSIS_MODULES:
+            self.logger.warning("Image analysis not available - missing analysis modules")
+            return None
+        
+        try:
+            image_analyzer = get_image_analyzer()
+            if not image_analyzer.is_available():
+                self.logger.warning("Image analysis not available - missing dependencies")
+                return None
+            
+            result = image_analyzer.analyze_image(image_path, question)
+            
+            if result.get("error"):
+                self.logger.error(f"Image analysis failed: {result['error']}")
+                return None
+            
+            # Format the analysis result
+            description = result.get("description", "No description available")
+            metadata = result.get("metadata", {})
+            
+            analysis_text = f"🖼️ Image: {os.path.basename(image_path)}\n"
+            analysis_text += f"📝 Description: {description}\n"
+            
+            if metadata:
+                if metadata.get("dimensions"):
+                    analysis_text += f"📐 Size: {metadata['dimensions'][0]}x{metadata['dimensions'][1]}\n"
+                if metadata.get("file_size"):
+                    size_mb = metadata['file_size'] / (1024 * 1024)
+                    analysis_text += f"💾 File Size: {size_mb:.1f} MB\n"
+            
+            if question:
+                analysis_text += f"❓ Question: {question}\n"
+            
+            return analysis_text
+            
+        except Exception as e:
+            self.logger.error(f"Error analyzing image {image_path}: {e}")
+            return None
+    
+    def analyze_folder(self, folder_path: str, max_depth: int = 3) -> Optional[str]:
+        """
+        Analyze folder structure and contents.
+        
+        Args:
+            folder_path: Path to folder to analyze
+            max_depth: Maximum depth to scan
+            
+        Returns:
+            str: Folder analysis text or None if failed
+        """
+        if not HAS_ANALYSIS_MODULES:
+            self.logger.warning("Folder analysis not available - missing analysis modules")
+            return None
+        
+        try:
+            folder_scanner = get_folder_scanner()
+            summary = folder_scanner.get_folder_summary(folder_path)
+            return summary
+            
+        except Exception as e:
+            self.logger.error(f"Error analyzing folder {folder_path}: {e}")
+            return None
+    
+    def process_image_path(self, image_path: str, question: Optional[str] = None) -> str:
+        """
+        Process image path and return analysis if available.
+        
+        Args:
+            image_path: Path to image file
+            question: Optional question about image
+            
+        Returns:
+            str: Processed content
+        """
+        if not os.path.exists(image_path):
+            return f"❌ Image file not found: {image_path}"
+        
+        analysis = self.analyze_image(image_path, question)
+        if analysis:
+            return analysis
+        else:
+            return f"🖼️ Image file: {image_path} (analysis not available)"
+    
+    def process_folder_path(self, folder_path: str) -> str:
+        """
+        Process folder path and return analysis if available.
+        
+        Args:
+            folder_path: Path to folder
+            
+        Returns:
+            str: Processed content
+        """
+        if not os.path.exists(folder_path):
+            return f"❌ Folder not found: {folder_path}"
+        
+        if not os.path.isdir(folder_path):
+            return f"❌ Path is not a directory: {folder_path}"
+        
+        analysis = self.analyze_folder(folder_path)
+        if analysis:
+            return analysis
+        else:
+            return f"📁 Folder: {folder_path} (analysis not available)"
     
     def get_processing_summary(self) -> Dict[str, bool]:
         """Get summary of available processing capabilities."""
-        return {
+        summary = {
             'url_fetching': self.config.FETCH_URLS_AUTO,
             'document_conversion': self.config.CONVERT_DOCUMENTS_AUTO,
             'has_magic': HAS_MAGIC,
@@ -378,6 +535,30 @@ class ContentProcessor:
             'allowed_extensions': self.config.ALLOWED_FILE_EXTENSIONS,
             'blocked_domains': self.config.BLOCKED_DOMAINS
         }
+        
+        # Add new analysis capabilities
+        if HAS_ANALYSIS_MODULES:
+            try:
+                image_analyzer = get_image_analyzer()
+                folder_scanner = get_folder_scanner()
+                summary.update({
+                    'image_analysis': image_analyzer.is_available(),
+                    'folder_scanning': True,
+                    'supported_image_formats': list(image_analyzer.supported_formats) if image_analyzer.supported_formats else []
+                })
+            except Exception as e:
+                self.logger.warning(f"Error checking analysis modules: {e}")
+                summary.update({
+                    'image_analysis': False,
+                    'folder_scanning': False
+                })
+        else:
+            summary.update({
+                'image_analysis': False,
+                'folder_scanning': False
+            })
+        
+        return summary
 
 
 # Global processor instance

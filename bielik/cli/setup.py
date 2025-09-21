@@ -162,7 +162,7 @@ class SetupManager:
             print(f"❌ Error downloading model: {e}")
             return False
     
-    def check_system_status(self) -> str:
+    def check_system_status(self, target_model: str = None) -> str:
         """Check overall system status."""
         try:
             # Quick health check
@@ -170,14 +170,14 @@ class SetupManager:
             if resp.status_code == 200:
                 data = resp.json()
                 models = [m['name'] for m in data.get('models', [])]
-                target_model = self.config.BIELIK_MODEL
-                if any(target_model.lower() in model.lower() for model in models):
-                    self.logger.info(f"Ollama status check: Model {target_model} available")
-                    return f"✅ Ollama running, model {target_model} available"
+                check_model = target_model or self.config.BIELIK_MODEL
+                if any(check_model.lower() in model.lower() for model in models):
+                    self.logger.info(f"Ollama status check: Model {check_model} available")
+                    return f"✅ Ollama running, model {check_model} available"
                 else:
                     available = ', '.join(models[:3]) if models else "none"
-                    self.logger.warning(f"Ollama running but model {target_model} not found")
-                    return f"⚠️ Ollama running, but model '{target_model}' missing. Available: {available}"
+                    self.logger.warning(f"Ollama running but model {check_model} not found")
+                    return f"⚠️ Ollama running, but model '{check_model}' missing. Available: {available}"
             else:
                 self.logger.error(f"Ollama HTTP error: {resp.status_code}")
                 return f"❌ Ollama responds but HTTP error {resp.status_code}"

@@ -112,7 +112,7 @@ def main():
     
     # Check system status and offer setup if needed
     if not args.no_setup:
-        status = setup_manager.check_system_status()
+        status = setup_manager.check_system_status(current_model)
         print(f"🔗 Status: {status}")
         
         if "❌" in status:
@@ -124,7 +124,7 @@ def main():
                     print()
                     if setup_manager.interactive_setup():
                         # Recheck status after setup
-                        status = setup_manager.check_system_status()
+                        status = setup_manager.check_system_status(current_model)
                         print(f"🔗 New status: {status}")
                         print()
                     else:
@@ -134,7 +134,7 @@ def main():
                 return
 
     # If still having issues, offer to continue anyway
-    if "❌" in setup_manager.check_system_status():
+    if "❌" in setup_manager.check_system_status(current_model):
         print("📖 Manual repair instructions:")
         print("  1. Install Ollama: https://ollama.com")
         print("  2. Run: ollama serve")
