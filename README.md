@@ -116,11 +116,101 @@
 
 ## ⚙️ Installation Options
 
-Bielik offers **two installation modes** to suit different needs:
+Bielik supports **universal multiplatform installation** that works seamlessly on **Windows**, **Linux**, and **macOS**.
 
-### 🪶 **Minimal Version** (Recommended for most users)
+## 🌍 **Universal Multiplatform Installation** ⭐ **RECOMMENDED**
 
-**~50MB installation** - Perfect for text-based Polish AI conversations:
+**Cross-platform automated installer** with smart dependency detection:
+
+### ⚡ **One-Liner Installation** (Fastest)
+
+**Unix/Linux/macOS:**
+```bash
+curl -sSL https://raw.githubusercontent.com/tom-sapletta-com/bielik/main/quick-install.sh | bash
+```
+
+**Windows PowerShell:**
+```powershell
+iwr https://raw.githubusercontent.com/tom-sapletta-com/bielik/main/quick-install.bat -OutFile quick-install.bat; .\quick-install.bat
+```
+
+### 📥 **Manual Installation (Any Platform)**
+
+```bash
+# 1. Clone repository
+git clone https://github.com/tom-sapletta-com/bielik.git
+cd bielik
+
+# 2. Run universal installer
+python install.py
+```
+
+### 🪟 **Windows Users**
+```batch
+REM Double-click install.bat or run:
+install.bat
+
+REM Launch Bielik:
+run.bat
+```
+
+### 🐧 **Linux/macOS Users**
+```bash
+# Run installer:
+./install.sh
+
+# Launch Bielik:
+./run.sh
+```
+
+### ⚙️ **Installation Options**
+```bash
+# Basic installation (recommended)
+python install.py
+
+# Skip AI models (fastest installation)
+python install.py --skip-ai
+
+# Use conda/mamba instead of pip
+python install.py --conda
+
+# Development installation
+python install.py --dev
+
+# Show all options
+python install.py --help
+```
+
+### 🎯 **What the Universal Installer Does:**
+- ✅ **Auto-detects** your operating system and Python version
+- ✅ **Creates** isolated virtual environment 
+- ✅ **Installs** all dependencies with smart fallback strategies
+- ✅ **Attempts** multiple llama-cpp-python installation methods
+- ✅ **Creates** platform-specific launcher scripts
+- ✅ **Works** even if AI models fail to install (Context Provider Commands still work)
+- ✅ **Provides** clear next steps and troubleshooting
+
+### 🚀 **After Installation**
+```bash
+# Universal launcher (any platform)
+python run.py
+
+# Platform-specific launchers
+./run.sh        # Linux/macOS
+run.bat         # Windows
+
+# Or direct activation
+.venv/bin/python -m bielik.cli.main     # Linux/macOS
+.venv\Scripts\python -m bielik.cli.main # Windows
+```
+
+---
+
+## 📦 **Alternative: PyPI Installation** 
+
+For users who prefer traditional pip installation:
+
+### 🪶 **Minimal Version** (Text-only)
 
 ```bash
 # Install minimal version (text-only)
@@ -135,13 +225,11 @@ python -m bielik
 - ✅ HuggingFace model downloads and management  
 - ✅ Document processing (PDF, DOCX, TXT)
 - ✅ Web content analysis
-- ✅ Folder structure analysis
+- ✅ Context Provider Commands (folder:, calc:, pdf:)
 - ✅ Personalized CLI experience
-- ❌ Image analysis (can be added later)
+- ❌ Local AI models (requires manual llama-cpp-python installation)
 
-### 🎯 **Full Version** (For image analysis)
-
-**~2GB+ installation** - Complete AI assistant with vision capabilities:
+### 🎯 **Full Version** (With vision)
 
 ```bash
 # Install full version (text + vision)
@@ -158,9 +246,7 @@ python -m bielik
 - ✅ **GPU acceleration support**
 - ✅ **Multi-modal document processing**
 
-### 🔄 **Upgrade Anytime**
-
-Start minimal and upgrade when needed:
+### 🔄 **Upgrade Options**
 
 ```bash
 # Upgrade minimal → full
@@ -514,6 +600,296 @@ docker-compose --profile minimal up
 - **Command Help:** `python -m bielik --help` or `:help` in CLI
 - **Test Environment:** Use Docker for isolated testing
 - **Check Status:** Use `:settings` command for current configuration
+
+---
+
+## 🛠️ **Creating Custom Context Provider Commands**
+
+Bielik CLI supports **extensible Context Provider Commands** that allow you to create custom `name:` commands that generate structured context data for AI analysis.
+
+### 📋 **Quick Setup Guide**
+
+**1. Create command directory:**
+```bash
+mkdir -p commands/mycommand
+cd commands/mycommand
+```
+
+**2. Create your command files:**
+- `main.py` - Your command implementation
+- `config.json` - Command configuration and metadata
+
+### 🐍 **Python Code Examples**
+
+#### **Basic Context Provider Command Template**
+
+```python
+# commands/mycommand/main.py
+from typing import List, Dict, Any
+from bielik.cli.command_api import ContextProviderCommand
+
+class MyCommand(ContextProviderCommand):
+    def __init__(self):
+        super().__init__(
+            name="mycommand",
+            description="Custom context provider that analyzes something",
+            usage="mycommand: <path_or_input>"
+        )
+    
+    def provide_context(self, args: List[str], context: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Generate context data from the provided arguments.
+        
+        Args:
+            args: List of arguments after 'mycommand:'
+            context: Additional context data
+            
+        Returns:
+            Dict containing structured context data
+        """
+        if not args:
+            return {
+                "error": "Please provide input after 'mycommand:'",
+                "usage": self.get_usage()
+            }
+        
+        input_data = " ".join(args)
+        
+        # Your custom logic here
+        analysis_result = self._analyze_input(input_data)
+        
+        return {
+            "command": "mycommand",
+            "input": input_data,
+            "analysis": analysis_result,
+            "timestamp": context.get("timestamp", ""),
+            "context_type": "custom_analysis"
+        }
+    
+    def _analyze_input(self, input_data: str) -> Dict[str, Any]:
+        """Custom analysis logic - implement your functionality here."""
+        return {
+            "input_length": len(input_data),
+            "word_count": len(input_data.split()),
+            "type": "text_analysis",
+            "summary": f"Analyzed text with {len(input_data)} characters"
+        }
+
+# Required: Command instance for the registry
+command = MyCommand()
+```
+
+#### **Advanced Example: Git Repository Analyzer**
+
+```python
+# commands/git/main.py
+import os
+import subprocess
+from typing import List, Dict, Any
+from bielik.cli.command_api import ContextProviderCommand
+
+class GitCommand(ContextProviderCommand):
+    def __init__(self):
+        super().__init__(
+            name="git",
+            description="Analyzes Git repository information and recent commits",
+            usage="git: [path_to_repo]"
+        )
+    
+    def provide_context(self, args: List[str], context: Dict[str, Any]) -> Dict[str, Any]:
+        repo_path = args[0] if args else "."
+        
+        if not self._is_git_repo(repo_path):
+            return {
+                "error": f"Not a git repository: {repo_path}",
+                "suggestion": "Run this command in a git repository directory"
+            }
+        
+        return {
+            "command": "git",
+            "repository_path": os.path.abspath(repo_path),
+            "branch_info": self._get_branch_info(repo_path),
+            "recent_commits": self._get_recent_commits(repo_path),
+            "status": self._get_status(repo_path),
+            "remote_info": self._get_remote_info(repo_path),
+            "context_type": "git_analysis"
+        }
+    
+    def _is_git_repo(self, path: str) -> bool:
+        """Check if directory is a git repository."""
+        try:
+            result = subprocess.run(
+                ["git", "rev-parse", "--git-dir"],
+                cwd=path, capture_output=True, text=True
+            )
+            return result.returncode == 0
+        except:
+            return False
+    
+    def _get_branch_info(self, path: str) -> Dict[str, str]:
+        """Get current branch information."""
+        try:
+            branch_result = subprocess.run(
+                ["git", "branch", "--show-current"],
+                cwd=path, capture_output=True, text=True
+            )
+            return {
+                "current_branch": branch_result.stdout.strip(),
+                "status": "active"
+            }
+        except:
+            return {"error": "Could not determine branch info"}
+    
+    def _get_recent_commits(self, path: str, limit: int = 5) -> List[Dict[str, str]]:
+        """Get recent commit information."""
+        try:
+            result = subprocess.run([
+                "git", "log", "--oneline", f"-{limit}",
+                "--pretty=format:%h|%an|%ar|%s"
+            ], cwd=path, capture_output=True, text=True)
+            
+            commits = []
+            for line in result.stdout.strip().split('\n'):
+                if '|' in line:
+                    hash_id, author, date, message = line.split('|', 3)
+                    commits.append({
+                        "hash": hash_id,
+                        "author": author,
+                        "date": date,
+                        "message": message
+                    })
+            return commits
+        except:
+            return [{"error": "Could not fetch commit history"}]
+    
+    def _get_status(self, path: str) -> Dict[str, Any]:
+        """Get git status information."""
+        try:
+            result = subprocess.run(
+                ["git", "status", "--porcelain"],
+                cwd=path, capture_output=True, text=True
+            )
+            
+            modified_files = []
+            for line in result.stdout.strip().split('\n'):
+                if line.strip():
+                    status, filename = line[:2], line[3:]
+                    modified_files.append({
+                        "file": filename,
+                        "status": status.strip()
+                    })
+            
+            return {
+                "modified_files": modified_files,
+                "clean": len(modified_files) == 0
+            }
+        except:
+            return {"error": "Could not get status"}
+    
+    def _get_remote_info(self, path: str) -> Dict[str, str]:
+        """Get remote repository information."""
+        try:
+            result = subprocess.run(
+                ["git", "remote", "get-url", "origin"],
+                cwd=path, capture_output=True, text=True
+            )
+            return {
+                "origin_url": result.stdout.strip(),
+                "has_remote": True
+            }
+        except:
+            return {"has_remote": False}
+
+# Required: Command instance for the registry
+command = GitCommand()
+```
+
+### 📄 **Configuration File (config.json)**
+
+```json
+{
+  "name": "mycommand",
+  "description": "Custom context provider for specialized analysis",
+  "version": "1.0.0",
+  "author": "Your Name",
+  "category": "analysis",
+  "usage_examples": [
+    {
+      "command": "mycommand: sample input text",
+      "description": "Analyzes the provided text input"
+    },
+    {
+      "command": "mycommand: /path/to/file",
+      "description": "Analyzes content from a file path"
+    }
+  ],
+  "requirements": [
+    "python>=3.8"
+  ],
+  "optional_dependencies": [
+    "numpy",
+    "requests"
+  ],
+  "tags": ["analysis", "custom", "text"]
+}
+```
+
+### 🚀 **Using Your Custom Command**
+
+After creating your command, restart Bielik CLI to load it:
+
+```bash
+# Restart Bielik CLI
+./run.py
+
+# Your command will now be available:
+mycommand: analyze this text
+
+# Check if it's loaded:
+:help
+```
+
+### 🔍 **Context Provider Command Features**
+
+**Built-in capabilities:**
+- ✅ **Automatic loading** from `commands/` directory
+- ✅ **Error handling** and validation
+- ✅ **Help generation** from docstrings and config
+- ✅ **Context integration** with AI prompts
+- ✅ **Argument parsing** from `name: args` format
+- ✅ **Multiple command support** in single session
+
+**What makes a good Context Provider:**
+- 📊 **Structured output** - Return organized, meaningful data
+- 🎯 **Specific purpose** - Focus on one type of analysis
+- ⚡ **Fast execution** - Avoid long-running operations
+- 📝 **Clear documentation** - Good descriptions and examples
+- 🛡️ **Error handling** - Graceful failure with helpful messages
+
+### 🌟 **Real-world Examples**
+
+**Available Context Providers:**
+```bash
+folder: .              # Analyze directory structure and files
+calc: 2+3*4           # Mathematical calculations  
+pdf: document.pdf     # PDF document analysis
+git: /path/to/repo    # Git repository information (example above)
+```
+
+**Example workflow:**
+```bash
+👤 You: folder: ~/projects
+✅ Context loaded! Directory analysis complete.
+
+👤 You: What are the largest Python files in this project?
+🤖 AI: [Uses folder context to identify and analyze Python files]
+
+👤 You: git: .
+✅ Context loaded! Git repository analysis complete.
+
+👤 You: Summarize recent commits and current status
+🤖 AI: [Uses git context to provide commit summaries and status]
+```
 
 ---
 

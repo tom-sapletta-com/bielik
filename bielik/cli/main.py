@@ -342,6 +342,9 @@ def main():
                      f"Respond in Polish unless asked otherwise.")
     messages = [{"role": "system", "content": system_prompt}]
     
+    # Initialize context storage for Context Provider commands
+    current_context = None
+    
     # Update current model setting if specified via CLI
     if current_model:
         cli_settings.set_current_model(current_model)
@@ -361,15 +364,25 @@ def main():
 
             # Handle special commands
             if command_processor.is_command(user_input):
-                continue_chat, new_model, updated_messages = command_processor.process_command(
+                continue_chat, result_data, updated_messages = command_processor.process_command(
                     user_input, messages, current_model
                 )
                 
                 if not continue_chat:
                     break
                 
-                if new_model is not None:
-                    current_model = new_model
+                # Check if this is a Context Provider command (result_data is context string)
+                if isinstance(result_data, str) and result_data.strip():
+                    # Store context from Context Provider command (replaces previous context)
+                    current_context = result_data
+                    print("✅ Context loaded! You can now ask questions about the provided data.")
+                    print("💡 Tip: Use another Context Provider command to load new context, or continue chatting.")
+                    messages = updated_messages
+                    continue
+                
+                # Handle model switching for direct commands (result_data is new_model)
+                if result_data is not None and not isinstance(result_data, str):
+                    current_model = result_data
                     # If switching to local model, enable local mode
                     if current_model in hf_model_manager.SPEAKLEASH_MODELS:
                         use_local_model = True
@@ -381,6 +394,10 @@ def main():
 
             # Process content in user message (URLs, file paths)
             enhanced_user_content = content_processor.process_content_in_text(user_input)
+            
+            # If we have context from Context Provider command, include it in the user message
+            if current_context:
+                enhanced_user_content = f"{current_context}\n\n---\n\nUser question: {enhanced_user_content}"
             
             messages.append({"role": "user", "content": enhanced_user_content})
             assistant_prompt = cli_settings.get_assistant_prompt_prefix()

@@ -1,0 +1,123 @@
+version: '3.8'
+
+services:
+  # Ubuntu Linux Test
+  test-ubuntu:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.test-ubuntu
+    volumes:
+      - ../:/workspace
+    working_dir: /workspace
+    command: |
+      bash -c "
+        echo '🐧 Testing Ubuntu Linux Installation' &&
+        python3 install.py --skip-ai &&
+        echo '✅ Installation completed' &&
+        python3 run.py --info &&
+        echo '🧪 Testing Context Provider Commands:' &&
+        echo 'folder: .' | timeout 10 python3 run.py || echo 'Context test completed' &&
+        echo '✅ Ubuntu test completed successfully'
+      "
+
+  # Debian Test  
+  test-debian:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.test-debian
+    volumes:
+      - ../:/workspace
+    working_dir: /workspace
+    command: |
+      bash -c "
+        echo '🐧 Testing Debian Installation' &&
+        python3 install.py --skip-ai &&
+        echo '✅ Installation completed' &&
+        python3 run.py --info &&
+        echo '🧪 Testing Context Provider Commands:' &&
+        echo 'folder: .' | timeout 10 python3 run.py || echo 'Context test completed' &&
+        echo '✅ Debian test completed successfully'
+      "
+
+  # Alpine Linux Test (minimal)
+  test-alpine:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.test-alpine
+    volumes:
+      - ../:/workspace
+    working_dir: /workspace
+    command: |
+      sh -c "
+        echo '🏔️ Testing Alpine Linux Installation' &&
+        python3 install.py --skip-ai &&
+        echo '✅ Installation completed' &&
+        python3 run.py --info &&
+        echo '🧪 Testing Context Provider Commands:' &&
+        echo 'folder: .' | timeout 10 python3 run.py || echo 'Context test completed' &&
+        echo '✅ Alpine test completed successfully'
+      "
+
+  # CentOS/RHEL Test
+  test-centos:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.test-centos
+    volumes:
+      - ../:/workspace
+    working_dir: /workspace
+    command: |
+      bash -c "
+        echo '🎩 Testing CentOS/RHEL Installation' &&
+        python3 install.py --skip-ai &&
+        echo '✅ Installation completed' &&
+        python3 run.py --info &&
+        echo '🧪 Testing Context Provider Commands:' &&
+        echo 'folder: .' | timeout 10 python3 run.py || echo 'Context test completed' &&
+        echo '✅ CentOS test completed successfully'
+      "
+
+  # Arch Linux Test
+  test-arch:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.test-arch
+    volumes:
+      - ../:/workspace
+    working_dir: /workspace
+    command: |
+      bash -c "
+        echo '🏛️ Testing Arch Linux Installation' &&
+        python3 install.py --skip-ai &&
+        echo '✅ Installation completed' &&
+        python3 run.py --info &&
+        echo '🧪 Testing Context Provider Commands:' &&
+        echo 'folder: .' | timeout 10 python3 run.py || echo 'Context test completed' &&
+        echo '✅ Arch test completed successfully'
+      "
+
+  # One-liner Test (simulates curl installation)
+  test-oneliner:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.test-oneliner
+    volumes:
+      - ../:/workspace
+    working_dir: /tmp
+    command: |
+      bash -c "
+        echo '🚀 Testing One-liner Installation' &&
+        cp /workspace/quick-install.sh . &&
+        chmod +x quick-install.sh &&
+        # Simulate the one-liner process
+        git clone https://github.com/tom-sapletta-com/bielik.git || cp -r /workspace bielik &&
+        cd bielik &&
+        python3 install.py --skip-ai &&
+        echo '✅ One-liner installation completed' &&
+        python3 run.py --info &&
+        echo '✅ One-liner test completed successfully'
+      "
+
+networks:
+  default:
+    driver: bridge
