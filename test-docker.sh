@@ -24,14 +24,14 @@ check_docker() {
 # Function to build Docker image
 build_image() {
     echo "📦 Building Docker test image..."
-    docker build -f Dockerfile.test -t bielik-test:latest --target testing .
+    docker build -f Dockerfile.simple -t bielik-simple-test:latest .
     echo "✅ Docker image built successfully"
 }
 
 # Function to run automated tests
 run_automated_tests() {
     echo "🧪 Running automated tests in Docker..."
-    docker-compose -f docker-compose.test.yml run --rm bielik-cli-test
+    docker-compose -f docker-compose.simple.yml run --rm bielik-auto-test
     echo "✅ Automated tests completed"
 }
 
@@ -49,21 +49,21 @@ start_interactive() {
     echo "Type 'exit' to leave the container."
     echo "Data will persist in Docker volumes."
     echo
-    docker-compose -f docker-compose.test.yml run --rm bielik-test
+    docker-compose -f docker-compose.simple.yml run --rm bielik-simple-test
 }
 
 # Function to clean up Docker resources
 cleanup() {
     echo "🧹 Cleaning up Docker resources..."
-    docker-compose -f docker-compose.test.yml down -v
-    docker image rm bielik-test:latest 2>/dev/null || true
+    docker-compose -f docker-compose.simple.yml down -v
+    docker image rm bielik-simple-test:latest 2>/dev/null || true
     echo "✅ Cleanup completed"
 }
 
 # Function to show test results
 show_results() {
     echo "📊 Showing test results..."
-    if docker-compose -f docker-compose.test.yml run --rm bielik-test cat /app/test-results.json 2>/dev/null; then
+    if docker-compose -f docker-compose.simple.yml run --rm bielik-simple-test cat /app/test-results.json 2>/dev/null; then
         echo "✅ Test results displayed"
     else
         echo "⚠️ No test results found. Run tests first."
@@ -73,7 +73,7 @@ show_results() {
 # Function to copy test results from container
 copy_results() {
     echo "📋 Copying test results from container..."
-    CONTAINER_ID=$(docker-compose -f docker-compose.test.yml run -d bielik-test /bin/bash)
+    CONTAINER_ID=$(docker-compose -f docker-compose.simple.yml run -d bielik-simple-test /bin/bash)
     docker cp "$CONTAINER_ID:/app/test-results.json" ./docker-test-results.json 2>/dev/null || echo "⚠️ No results to copy"
     docker rm "$CONTAINER_ID" > /dev/null 2>&1
     if [ -f "./docker-test-results.json" ]; then

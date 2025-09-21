@@ -1,0 +1,50 @@
+# Simplified Docker environment for Bielik CLI testing
+# Focuses on core functionality without external system dependencies
+FROM python:3.11-slim
+
+# Set working directory
+WORKDIR /app
+
+# Install minimal system dependencies that are usually available
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/* || true
+
+# Copy project files
+COPY pyproject.toml setup.cfg MANIFEST.in README.md LICENSE ./
+COPY bielik/ ./bielik/
+COPY commands/ ./commands/
+COPY tests/ ./tests/
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -e . && \
+    pip install --no-cache-dir pytest pytest-cov pytest-mock
+
+# Create test data directory structure
+RUN mkdir -p /app/test-data/documents && \
+    mkdir -p /app/test-data/samples && \
+    mkdir -p /app/models && \
+    mkdir -p /app/bielik_projects && \
+    mkdir -p /app/.bielik
+
+# Create sample test files for document processing
+RUN echo "Sample text file for testing PDF command.\nThis is a test document with multiple lines.\nLorem ipsum dolor sit amet." > /app/test-data/documents/sample.txt && \
+    echo "# Sample Markdown File\n\nThis is a **test** markdown document.\n\n## Features\n- Item 1\n- Item 2" > /app/test-data/documents/sample.md
+
+# Create non-root user for testing
+RUN useradd -m -u 1000 bielik && \
+    chown -R bielik:bielik /app && \
+    chmod -R 755 /app
+
+USER bielik
+
+# Set environment variables for testing
+ENV PYTHONPATH=/app
+ENV BIELIK_DATA_DIR=/app/.bielik
+ENV BIELIK_MODELS_DIR=/app/models
+ENV BIELIK_PROJECTS_DIR=/app/bielik_projects
+
+# Copy test runner
+COPY docker-test-runner.py /app/
+
+# Default command starts interactive shell
+CMD ["/bin/bash"]
