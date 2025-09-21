@@ -42,6 +42,15 @@ class ImageAnalyzer:
         self.model = None
         self.model_loaded = False
         
+        # Check if vision packages are available
+        self._vision_available = HAVE_PIL and HAVE_TRANSFORMERS
+        if not self._vision_available:
+            self.logger.info("Vision packages not installed - image analysis disabled")
+            if not HAVE_PIL:
+                self.logger.info("Missing: Pillow (install with: pip install bielik[vision])")
+            if not HAVE_TRANSFORMERS:
+                self.logger.info("Missing: transformers, torch (install with: pip install bielik[vision])")
+        
         # Supported image formats
         self.supported_formats = {
             '.jpg', '.jpeg', '.png', '.gif', '.bmp', 

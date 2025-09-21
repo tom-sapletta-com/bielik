@@ -150,10 +150,40 @@ class CommandProcessor:
             parts = command.split(None, 1)
             if len(parts) > 1:
                 new_model = self.model_manager.switch_model(parts[1], current_model)
+                if new_model:
+                    # Update settings with new model
+                    self.settings.set_current_model(new_model)
+                    print(f"✅ Assistant name updated to: {self.settings.get_assistant_name()}")
                 return True, new_model, messages
             else:
                 print("❓ Usage: :switch <model_name>")
                 return True, None, messages
+        
+        # Name command - change user display name
+        elif command.startswith(":name"):
+            parts = command.split(None, 1)
+            if len(parts) > 1:
+                new_name = parts[1]
+                if self.settings.set_user_name(new_name):
+                    print(f"✅ Your display name changed to: {self.settings.get_user_name()}")
+                else:
+                    print("❌ Could not change display name")
+            else:
+                print("❓ Usage: :name <your_name>")
+                print(f"Current name: {self.settings.get_user_name()}")
+            return True, None, messages
+        
+        # Settings command - show current settings
+        elif command == ":settings":
+            settings = self.settings.get_settings_summary()
+            print("⚙️ Current CLI Settings:")
+            print(f"  👤 User name: {settings['user_name']}")
+            print(f"  🤖 Assistant name: {settings['assistant_name']}")
+            print(f"  📦 Current model: {settings['current_model'] or 'Default'}")
+            print(f"  🔄 Auto-switch after download: {settings['auto_switch']}")
+            print(f"  📄 Settings file: {settings['env_file_path']}")
+            print(f"  💾 File exists: {'✅' if settings['env_file_exists'] else '❌'}")
+            return True, None, messages
         
         # Unknown command
         else:

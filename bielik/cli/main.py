@@ -13,6 +13,7 @@ from typing import List, Dict
 from .commands import CommandProcessor
 from .send_chat import send_chat
 from .setup import SetupManager
+from .settings import get_cli_settings
 from ..config import get_config, get_logger
 from ..content_processor import get_content_processor
 from ..hf_models import get_model_manager
@@ -85,6 +86,7 @@ def main():
     command_processor = CommandProcessor()
     setup_manager = SetupManager()
     hf_model_manager = get_model_manager()
+    cli_settings = get_cli_settings()
     
     # Handle CLI arguments
     current_model = args.model
@@ -155,18 +157,24 @@ def main():
     print("🚀 Ready to chat! Write something...")
     print("─" * 53)
 
-    # Initialize conversation
-    system_prompt = ("You are Bielik, a helpful Polish AI assistant. "
-                     "Respond in Polish unless asked otherwise.")
+    # Initialize conversation with dynamic assistant name
+    assistant_name = cli_settings.get_assistant_name()
+    system_prompt = (f"You are {assistant_name}, a helpful Polish AI assistant. "
+                     f"Respond in Polish unless asked otherwise.")
     messages = [{"role": "system", "content": system_prompt}]
+    
+    # Update current model setting if specified via CLI
+    if current_model:
+        cli_settings.set_current_model(current_model)
 
     # Main chat loop
     try:
         while True:
             try:
-                user_input = input("\n🧑 You: ").strip()
+                user_prompt = cli_settings.get_user_prompt_prefix()
+                user_input = input(f"\n{user_prompt} ").strip()
             except EOFError:
-                print("\n👋 Goodbye!")
+                print(f"\n👋 Goodbye {cli_settings.get_user_name()}!")
                 break
 
             if not user_input:
@@ -196,11 +204,12 @@ def main():
             enhanced_user_content = content_processor.process_content_in_text(user_input)
             
             messages.append({"role": "user", "content": enhanced_user_content})
-            print("🦅 Bielik thinking...", end="", flush=True)
+            assistant_prompt = cli_settings.get_assistant_prompt_prefix()
+            print(f"{assistant_prompt} thinking...", end="", flush=True)
 
             # Send message to model
             response = send_chat(messages, model=current_model, use_local=use_local_model)
-            print("\r🦅 Bielik: " + " "*20)  # Clear "thinking" message
+            print(f"\r{assistant_prompt} " + " "*20)  # Clear "thinking" message
             print(f"    {response}")
 
             # Only add to history if it's a real response, not an error

@@ -42,28 +42,28 @@ class ModelManager:
         if downloaded:
             print("💾 Downloaded Models:")
             for model_name, info in downloaded.items():
-                size_gb = info.get('size_bytes', 0) / (1024**3)
+                size_gb = info.size_bytes / (1024**3)
                 print(f"  {model_name} ({size_gb:.1f} GB)")
-                print(f"    📁 Path: {info.get('local_path', 'N/A')}")
+                print(f"    📁 Path: {info.local_path}")
             print()
     
-    def download_model(self, model_name: str) -> None:
-        """Download a Hugging Face model."""
+    def download_model(self, model_name: str) -> bool:
+        """Download a Hugging Face model and return success status."""
         if model_name not in self.model_manager.SPEAKLEASH_MODELS:
             print(f"❌ Unknown model: {model_name}")
             print("💡 Use :models to see available models")
-            return
+            return False
         
         if self.model_manager.is_model_downloaded(model_name):
             print(f"ℹ️  Model {model_name} is already downloaded.")
             try:
                 force = input("Download again? (y/N): ").lower()
                 if force not in ['y', 'yes']:
-                    return
+                    return False
                 force_download = True
             except (EOFError, KeyboardInterrupt):
                 print("\n❌ Download cancelled")
-                return
+                return False
         else:
             force_download = False
         
@@ -74,11 +74,14 @@ class ModelManager:
                 size_gb = model_info.size_bytes / (1024**3)
                 print(f"✅ Model downloaded successfully! ({size_gb:.1f} GB)")
                 print(f"📁 Path: {model_info.local_path}")
+                return True
             else:
                 print("❌ Failed to download model")
+                return False
         except Exception as e:
             self.logger.error(f"Error downloading model: {e}")
             print(f"❌ Download error: {e}")
+            return False
     
     def delete_model(self, model_name: str) -> None:
         """Delete a downloaded Hugging Face model."""
@@ -178,10 +181,31 @@ class ModelManager:
                 if model_name in downloaded:
                     model_info = downloaded[model_name]
                     info.update({
-                        "local_path": model_info.get('local_path'),
-                        "size_gb": model_info.get('size_bytes', 0) / (1024**3),
+                        "local_path": model_info.local_path,
+                        "size_gb": model_info.size_bytes / (1024**3),
                         "description": self.model_manager.SPEAKLEASH_MODELS[model_name]["description"],
                         "parameters": self.model_manager.SPEAKLEASH_MODELS[model_name]["parameters"]
                     })
         
         return info
+    
+    def get_full_model_name(self, model_name: str) -> str:
+        """
+        Get the full model name for Ollama usage.
+        
+        For HF models, this returns the model name as-is since they're used directly.
+        For Ollama models, this would be the complete model identifier.
+        
+        Args:
+            model_name: Short model name
+            
+        Returns:
+            Full model name for usage in chat
+        """
+        # For HF models, return as-is
+        if model_name in self.model_manager.SPEAKLEASH_MODELS:
+            return model_name
+        
+        # For Ollama models, assume the name is already correct
+        # In a more sophisticated implementation, we could validate against Ollama API
+        return model_name

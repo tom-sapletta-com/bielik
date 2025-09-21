@@ -177,8 +177,8 @@ class ClientModelManager:
                 if model_name in downloaded:
                     model_info = downloaded[model_name]
                     info.update({
-                        "local_path": model_info.get('local_path'),
-                        "file_size_gb": model_info.get('size_bytes', 0) / (1024**3),
+                        "local_path": model_info.local_path,
+                        "file_size_gb": model_info.size_bytes / (1024**3),
                         "model_description": self.hf_model_manager.SPEAKLEASH_MODELS[model_name].get("description"),
                         "model_parameters": self.hf_model_manager.SPEAKLEASH_MODELS[model_name].get("parameters")
                     })
