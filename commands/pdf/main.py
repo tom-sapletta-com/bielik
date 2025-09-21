@@ -224,9 +224,9 @@ class DocumentReaderCommand(ContextProviderCommand):
                     page_text = page.extract_text()
                     if page_text.strip():
                         if options['output_format'] == 'markdown':
-                            text_parts.append(f"## Page {page_num + 1}\n\n{page_text}\n")
+                            text_parts.append("## Page " + str(page_num + 1) + "\n\n" + page_text + "\n")
                         else:
-                            text_parts.append(f"--- Page {page_num + 1} ---\n{page_text}\n")
+                            text_parts.append("--- Page " + str(page_num + 1) + " ---\n" + page_text + "\n")
                 
                 if not text_parts:
                     return "⚠️ No text content found in the specified pages"

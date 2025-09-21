@@ -176,8 +176,8 @@ def run_model_tests(model: str, use_local: bool = False) -> None:
     results = []
     
     for i, test in enumerate(test_cases, 1):
-        print(f"\n🧪 Test {i}/5: {test['name']}")
-        print(f"📝 Prompt: {test['prompt']}")
+        print("\n🧪 Test " + str(i) + "/5: " + test['name'])
+        print("📝 Prompt: " + test['prompt'])
         
         try:
             response = execute_prompt(test['prompt'], model, use_local)
@@ -208,21 +208,21 @@ def run_model_tests(model: str, use_local: bool = False) -> None:
             })
     
     # Summary
-    print(f"\n{'='*50}")
+    print("\n" + "="*50)
     print("📊 TEST SUMMARY")
-    print(f"{'='*50}")
+    print("="*50)
     
     passed = sum(1 for r in results if r['success'])
     total = len(results)
     
-    print(f"✅ Passed: {passed}/{total}")
-    print(f"❌ Failed: {total - passed}/{total}")
-    print(f"📈 Success Rate: {(passed/total)*100:.1f}%")
+    print("✅ Passed: " + str(passed) + "/" + str(total))
+    print("❌ Failed: " + str(total - passed) + "/" + str(total))
+    print("📈 Success Rate: " + str(round((passed/total)*100, 1)) + "%")
     
     if passed == total:
-        print(f"\n🎉 All tests passed! Model {model} is working correctly.")
+        print("\n🎉 All tests passed! Model " + model + " is working correctly.")
     else:
-        print(f"\n⚠️  Some tests failed. Check model configuration or connectivity.")
+        print("\n⚠️  Some tests failed. Check model configuration or connectivity.")
 
 
 def parse_args():
@@ -409,9 +409,9 @@ def main():
         while True:
             try:
                 user_prompt = cli_settings.get_user_prompt_prefix()
-                user_input = input(f"\n{user_prompt} ").strip()
+                user_input = input("\n" + user_prompt + " ").strip()
             except EOFError:
-                print(f"\n👋 Goodbye {cli_settings.get_user_name()}!")
+                print("\n👋 Goodbye " + cli_settings.get_user_name() + "!")
                 break
 
             if not user_input:

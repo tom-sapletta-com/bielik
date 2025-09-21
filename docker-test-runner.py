@@ -283,15 +283,15 @@ class BielikDockerTester:
         print(f"📈 Success Rate: {(passed_tests/total_tests)*100:.1f}%" if total_tests > 0 else "📈 Success Rate: 0%")
         
         if failed_tests > 0:
-            print(f"\n❌ Failed Tests:")
+            print("\n❌ Failed Tests:")
             for result in self.results:
                 if not result['success']:
-                    print(f"   - {result['test']}: {result.get('error', 'Unknown error')}")
+                    print("   - " + result['test'] + ": " + result.get('error', 'Unknown error'))
         
-        print(f"\n📋 Detailed Results:")
+        print("\n📋 Detailed Results:")
         for result in self.results:
             status = "✅" if result['success'] else "❌"
-            print(f"   {status} {result['test']}")
+            print("   " + status + " " + result['test'])
             if result.get('found_keywords'):
                 print(f"      Keywords: {', '.join(result['found_keywords'])}")
         
@@ -308,7 +308,7 @@ class BielikDockerTester:
                 'results': self.results
             }, f, indent=2)
         
-        print(f"\n💾 Report saved to: {report_file}")
+        print("\n💾 Report saved to: " + report_file)
         
         return passed_tests == total_tests
 

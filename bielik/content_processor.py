@@ -355,7 +355,7 @@ class ContentProcessor:
             
             content = self.fetch_url_content(url)
             if content:
-                enhanced_parts.append(f"\n--- Content from {url} ---\n{content}\n--- End of {url} ---\n")
+                enhanced_parts.append("\n--- Content from " + url + " ---\n" + content + "\n--- End of " + url + " ---\n")
         
         # Find file paths in text (simple heuristic)
         # Look for strings that look like file paths
@@ -370,7 +370,7 @@ class ContentProcessor:
                 
                 content = self.convert_document_to_text(path)
                 if content:
-                    enhanced_parts.append(f"\n--- Content from {path} ---\n{content}\n--- End of {path} ---\n")
+                    enhanced_parts.append("\n--- Content from " + path + " ---\n" + content + "\n--- End of " + path + " ---\n")
         
         # Find image paths in text
         if HAS_ANALYSIS_MODULES:
@@ -387,7 +387,7 @@ class ContentProcessor:
                         
                         image_content = self.analyze_image(image_path)
                         if image_content:
-                            enhanced_parts.append(f"\n--- Image Analysis: {image_path} ---\n{image_content}\n--- End of image analysis ---\n")
+                            enhanced_parts.append("\n--- Image Analysis: " + image_path + " ---\n" + image_content + "\n--- End of image analysis ---\n")
         
         # Find folder paths in text
         if HAS_ANALYSIS_MODULES:
@@ -403,7 +403,7 @@ class ContentProcessor:
                     
                     folder_content = self.analyze_folder(path)
                     if folder_content:
-                        enhanced_parts.append(f"\n--- Folder Analysis: {path} ---\n{folder_content}\n--- End of folder analysis ---\n")
+                        enhanced_parts.append("\n--- Folder Analysis: " + path + " ---\n" + folder_content + "\n--- End of folder analysis ---\n")
         
         return '\n'.join(enhanced_parts)
     
@@ -438,18 +438,18 @@ class ContentProcessor:
             description = result.get("description", "No description available")
             metadata = result.get("metadata", {})
             
-            analysis_text = f"🖼️ Image: {os.path.basename(image_path)}\n"
-            analysis_text += f"📝 Description: {description}\n"
+            analysis_text = "🖼️ Image: " + os.path.basename(image_path) + "\n"
+            analysis_text += "📝 Description: " + description + "\n"
             
             if metadata:
                 if metadata.get("dimensions"):
-                    analysis_text += f"📐 Size: {metadata['dimensions'][0]}x{metadata['dimensions'][1]}\n"
+                    analysis_text += "📐 Size: " + str(metadata['dimensions'][0]) + "x" + str(metadata['dimensions'][1]) + "\n"
                 if metadata.get("file_size"):
                     size_mb = metadata['file_size'] / (1024 * 1024)
-                    analysis_text += f"💾 File Size: {size_mb:.1f} MB\n"
+                    analysis_text += "💾 File Size: " + str(round(size_mb, 1)) + " MB\n"
             
             if question:
-                analysis_text += f"❓ Question: {question}\n"
+                analysis_text += "❓ Question: " + question + "\n"
             
             return analysis_text
             

@@ -140,7 +140,7 @@ class ProjectManager:
         timestamp = datetime.datetime.now().isoformat()
         
         if name is None:
-            name = f"{command_type}_{datetime.datetime.now().strftime('%H%M%S')}"
+            name = command_type + "_" + datetime.datetime.now().strftime('%H%M%S')
         
         # Calculate content size and checksum
         content_bytes = content.encode('utf-8')
@@ -210,103 +210,205 @@ class ProjectManager:
         ]
     
     def _generate_project_html(self, project_id: str):
-        """Generate HTML representation for project."""
+        """Generate HTML representation for project using template-based approach."""
         project = self.projects[project_id]
         artifacts = self.artifacts.get(project_id, [])
         
-        html_content = f"""<!DOCTYPE html>
-<html lang="en" data-project-id="{project.id}" data-session-id="{project.session_id}">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bielik Project: {project.name}</title>
-    <meta name="project-name" content="{project.name}">
-    <meta name="project-description" content="{project.description}">
-    <meta name="created-at" content="{project.created_at}">
-    <meta name="updated-at" content="{project.updated_at}">
-    <meta name="artifacts-count" content="{project.artifacts_count}">
-    <meta name="tags" content="{','.join(project.tags)}">
+        # Build the complete HTML using simple string building
+        html_parts = []
+        
+        # HTML Document start
+        html_parts.append('<!DOCTYPE html>')
+        html_parts.append('<html lang="en">')
+        
+        # Head section
+        self._build_html_head(html_parts, project)
+        
+        # Body start
+        html_parts.append('<body>')
+        
+        # Project header
+        self._build_project_header(html_parts, project)
+        
+        # Artifacts container
+        html_parts.append('<div class="artifacts-container">')
+        
+        # Build artifacts or empty state
+        if artifacts:
+            self._build_artifacts_section(html_parts, artifacts)
+        else:
+            self._build_empty_state(html_parts)
+        
+        # Close containers and add footer
+        html_parts.append('</div>')
+        self._build_footer_script(html_parts)
+        html_parts.append('</body>')
+        html_parts.append('</html>')
+        
+        # Join all parts and write to file
+        html_content = '\n'.join(html_parts)
+        html_path = Path(project.html_path)
+        with open(html_path, 'w', encoding='utf-8') as f:
+            f.write(html_content)
     
-    <style>
-        body {{
+    def _build_html_head(self, html_parts, project):
+        """Build HTML head section."""
+        project_metadata_json = json.dumps(asdict(project))
+        tags_joined = ','.join(project.tags)
+        
+        html_parts.extend([
+            '<head>',
+            '    <meta charset="UTF-8">',
+            '    <meta name="viewport" content="width=device-width, initial-scale=1.0">',
+            '    <title>Bielik Project: ' + project.name + '</title>',
+            '    <meta name="project-name" content="' + project.name + '">',
+            '    <meta name="project-description" content="' + project.description + '">',
+            '    <meta name="created-at" content="' + project.created_at + '">',
+            '    <meta name="updated-at" content="' + project.updated_at + '">',
+            '    <meta name="artifacts-count" content="' + str(project.artifacts_count) + '">',
+            '    <meta name="tags" content="' + tags_joined + '">',
+            '    <meta name="project-metadata" content=\'' + project_metadata_json + '\'>',
+            self._get_css_styles(),
+            '</head>'
+        ])
+    
+    def _build_project_header(self, html_parts, project):
+        """Build project header section."""
+        # Build tags HTML if they exist
+        tags_html = ''
+        if project.tags:
+            tag_spans = []
+            for tag in project.tags:
+                tag_spans.append('<span class="tag">' + tag + '</span>')
+            tags_html = '<div class="tags">' + ''.join(tag_spans) + '</div>'
+        
+        html_parts.extend([
+            '<div class="project-header">',
+            '    <h1 class="project-title">🦅 ' + project.name + '</h1>',
+            '    <p>' + project.description + '</p>',
+            '    <div class="project-meta">',
+            '        <span class="meta-item">📅 Created: ' + project.created_at[:10] + '</span>',
+            '        <span class="meta-item">📝 Artifacts: ' + str(project.artifacts_count) + '</span>',
+            '        <span class="meta-item">🆔 ID: ' + project.id[:8] + '</span>',
+            '    </div>',
+            '    ' + tags_html,
+            '</div>'
+        ])
+    
+    def _build_artifacts_section(self, html_parts, artifacts):
+        """Build artifacts section."""
+        for artifact in artifacts:
+            html_parts.extend([
+                '    <div class="artifact"',
+                '         data-artifact-id="' + artifact.id + '"',
+                '         data-artifact-type="' + artifact.type + '"',
+                '         data-created-at="' + artifact.created_at + '"',
+                '         data-checksum="' + artifact.checksum + '"',
+                '         data-size-bytes="' + str(artifact.size_bytes) + '">',
+                '        <div class="artifact-header">',
+                '            <h3 class="artifact-title">' + artifact.name + '</h3>',
+                '            <span class="artifact-type">' + artifact.type + '</span>',
+                '        </div>',
+                '        <div class="artifact-command">Command: ' + artifact.command + '</div>',
+                '        <div class="artifact-content" id="content-' + artifact.id + '">',
+                '            <!-- Content will be populated separately -->',
+                '        </div>',
+                '    </div>'
+            ])
+    
+    def _build_empty_state(self, html_parts):
+        """Build empty state section."""
+        html_parts.extend([
+            '    <div class="empty-state">',
+            '        <h3>No artifacts yet</h3>',
+            '        <p>Use Context Provider Commands to create artifacts for this project.</p>',
+            '        <p>Example: <code>folder: ~/documents</code>, <code>calc: 2 + 3 * 4</code>, <code>pdf: document.pdf</code></p>',
+            '    </div>'
+        ])
+    
+    def _build_footer_script(self, html_parts):
+        """Build footer script section."""
+        html_parts.extend([
+            '<script>',
+            '    console.log("Bielik Project loaded:", document.title);',
+            '    const footer = document.createElement("div");',
+            '    footer.style.cssText = "text-align: center; margin-top: 40px; padding: 20px; color: #666; border-top: 1px solid #eee;";',
+            '    footer.innerHTML = "<p>Generated by Bielik CLI on " + new Date().toLocaleString() + "</p>";',
+            '    document.body.appendChild(footer);',
+            '</script>'
+        ])
+    
+    def _get_css_styles(self):
+        """Get CSS styles as a string."""
+        return '''    <style>
+        body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
             background-color: #f5f5f5;
-        }}
-        
-        .project-header {{
+        }
+        .project-header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             padding: 30px;
             border-radius: 10px;
             margin-bottom: 30px;
-        }}
-        
-        .project-title {{
+        }
+        .project-title {
             margin: 0 0 10px 0;
             font-size: 2.5em;
-        }}
-        
-        .project-meta {{
+        }
+        .project-meta {
             display: flex;
             gap: 20px;
             flex-wrap: wrap;
             opacity: 0.9;
-        }}
-        
-        .meta-item {{
+        }
+        .meta-item {
             background: rgba(255,255,255,0.2);
             padding: 5px 15px;
             border-radius: 20px;
             font-size: 0.9em;
-        }}
-        
-        .artifacts-container {{
+        }
+        .artifacts-container {
             display: grid;
             gap: 20px;
-        }}
-        
-        .artifact {{
+        }
+        .artifact {
             background: white;
             border-radius: 8px;
             padding: 20px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             border-left: 4px solid #667eea;
-        }}
-        
-        .artifact-header {{
+        }
+        .artifact-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 15px;
-        }}
-        
-        .artifact-title {{
+        }
+        .artifact-title {
             margin: 0;
             color: #333;
-        }}
-        
-        .artifact-type {{
+        }
+        .artifact-type {
             background: #667eea;
             color: white;
             padding: 4px 12px;
             border-radius: 20px;
             font-size: 0.8em;
             font-weight: bold;
-        }}
-        
-        .artifact-command {{
+        }
+        .artifact-command {
             background: #f8f9fa;
             padding: 10px;
             border-radius: 5px;
             font-family: monospace;
             margin-bottom: 15px;
             border: 1px solid #e9ecef;
-        }}
-        
-        .artifact-content {{
+        }
+        .artifact-content {
             background: #f8f9fa;
             padding: 15px;
             border-radius: 5px;
@@ -315,92 +417,25 @@ class ProjectManager:
             overflow-y: auto;
             white-space: pre-wrap;
             font-family: monospace;
-        }}
-        
-        .empty-state {{
+        }
+        .empty-state {
             text-align: center;
             padding: 60px 20px;
             color: #666;
-        }}
-        
-        .tags {{
+        }
+        .tags {
             display: flex;
             gap: 10px;
             flex-wrap: wrap;
-        }}
-        
-        .tag {{
+        }
+        .tag {
             background: #e9ecef;
             padding: 4px 10px;
             border-radius: 15px;
             font-size: 0.8em;
             color: #495057;
-        }}
-    </style>
-</head>
-<body>
-    <div class="project-header" data-project-metadata='{json.dumps(asdict(project))}'>
-        <h1 class="project-title">🦅 {project.name}</h1>
-        <p>{project.description}</p>
-        <div class="project-meta">
-            <span class="meta-item">📅 Created: {project.created_at[:10]}</span>
-            <span class="meta-item">📝 Artifacts: {project.artifacts_count}</span>
-            <span class="meta-item">🆔 ID: {project.id[:8]}</span>
-        </div>
-        {f'<div class="tags">{"".join(f"<span class=\"tag\">{tag}</span>" for tag in project.tags)}</div>' if project.tags else ''}
-    </div>
-    
-    <div class="artifacts-container">
-"""
-        
-        if artifacts:
-            for artifact in artifacts:
-                html_content += f"""
-        <div class="artifact" 
-             data-artifact-id="{artifact.id}"
-             data-artifact-type="{artifact.type}"
-             data-created-at="{artifact.created_at}"
-             data-checksum="{artifact.checksum}"
-             data-size-bytes="{artifact.size_bytes}">
-            <div class="artifact-header">
-                <h3 class="artifact-title">{artifact.name}</h3>
-                <span class="artifact-type">{artifact.type}</span>
-            </div>
-            <div class="artifact-command">Command: {artifact.command}</div>
-            <div class="artifact-content" id="content-{artifact.id}">
-                <!-- Content will be populated separately -->
-            </div>
-        </div>
-"""
-        else:
-            html_content += """
-        <div class="empty-state">
-            <h3>No artifacts yet</h3>
-            <p>Use Context Provider Commands to create artifacts for this project.</p>
-            <p>Example: <code>folder: ~/documents</code>, <code>calc: 2 + 3 * 4</code>, <code>pdf: document.pdf</code></p>
-        </div>
-"""
-        
-        html_content += """
-    </div>
-    
-    <script>
-        // JavaScript for enhanced interactivity
-        console.log('Bielik Project loaded:', document.title);
-        
-        // Add timestamp to page
-        const footer = document.createElement('div');
-        footer.style.cssText = 'text-align: center; margin-top: 40px; padding: 20px; color: #666; border-top: 1px solid #eee;';
-        footer.innerHTML = `<p>Generated by Bielik CLI on ${new Date().toLocaleString()}</p>`;
-        document.body.appendChild(footer);
-    </script>
-</body>
-</html>"""
-        
-        # Write HTML file
-        html_path = Path(project.html_path)
-        with open(html_path, 'w', encoding='utf-8') as f:
-            f.write(html_content)
+        }
+    </style>'''
     
     def _add_artifact_to_html(self, project_id: str, artifact: ArtifactMetadata, content: str):
         """Add artifact content to existing HTML file."""
@@ -415,12 +450,12 @@ class ProjectManager:
                 html_content = f.read()
             
             # Replace the placeholder content for this artifact
-            content_placeholder = f'<!-- Content will be populated separately -->'
+            content_placeholder = '<!-- Content will be populated separately -->'
             actual_content = content.replace('<', '&lt;').replace('>', '&gt;')  # Escape HTML
             
             # Find and replace the specific artifact content
             soup = BeautifulSoup(html_content, 'html.parser')
-            content_div = soup.find('div', {'id': f'content-{artifact.id}'})
+            content_div = soup.find('div', {'id': 'content-' + artifact.id})
             if content_div:
                 content_div.clear()
                 content_div.append(actual_content)
@@ -465,7 +500,7 @@ class ProjectManager:
                                 ArtifactMetadata(**a) for a in artifacts_data
                             ]
                     except Exception as e:
-                        print(f"⚠️ Failed to load project from {project_dir}: {e}")
+                        print("⚠️ Failed to load project from " + str(project_dir) + ": " + str(e))
 
 
 # Global project manager instance

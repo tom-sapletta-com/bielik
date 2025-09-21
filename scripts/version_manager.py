@@ -170,10 +170,10 @@ def main():
         else:
             print(f"❌ Failed to update {file_path}")
     
-    print(f"\n📊 Updated {success_count}/{len(files_to_update)} files")
+    print("\n📊 Updated " + str(success_count) + "/" + str(len(files_to_update)) + " files")
     
     if success_count > 0:
-        print(f"🎉 Version incremented: {current_version} -> {new_version}")
+        print("🎉 Version incremented: " + current_version + " -> " + new_version)
         # Output the new version for use in scripts
         print(f"NEW_VERSION={new_version}")
     else:

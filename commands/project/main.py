@@ -82,10 +82,10 @@ Examples:
             elif command == "validate":
                 return self._validate_project(args[1:], project_manager)
             else:
-                return f"❌ Unknown project command: {command}\n\n{self.usage}"
+                return "❌ Unknown project command: " + command + "\n\n" + self.usage
         
         except Exception as e:
-            return f"❌ Project command failed: {str(e)}"
+            return "❌ Project command failed: " + str(e)
     
     def _create_project(self, args: List[str], project_manager) -> str:
         """Create a new project."""
@@ -354,26 +354,26 @@ Examples:
             if result.errors:
                 response += "❌ **Errors:**\n"
                 for error in result.errors:
-                    response += f"   • {error}\n"
+                    response += "   • " + error + "\n"
                 response += "\n"
             
             if result.warnings:
                 response += "⚠️ **Warnings:**\n"
                 for warning in result.warnings:
-                    response += f"   • {warning}\n"
+                    response += "   • " + warning + "\n"
                 response += "\n"
             
             if result.suggestions:
                 response += "💡 **Suggestions:**\n"
                 for suggestion in result.suggestions:
-                    response += f"   • {suggestion}\n"
+                    response += "   • " + suggestion + "\n"
                 response += "\n"
             
             if result.metadata:
                 response += "📊 **Metadata:**\n"
                 for key, value in result.metadata.items():
                     if key != 'content_hash':  # Skip long hash
-                        response += f"   • {key}: {value}\n"
+                        response += "   • " + key + ": " + str(value) + "\n"
             
             return response
             

@@ -78,9 +78,9 @@ class ContextProviderCommand(CommandBase):
         
         # Format context data for AI consumption
         if context_data:
-            formatted = f"\n=== Context from {self.name}: ===\n"
+            formatted = "\n=== Context from " + self.name + ": ===\n"
             for key, value in context_data.items():
-                formatted += f"{key}: {value}\n"
+                formatted += key + ": " + str(value) + "\n"
             formatted += "=== End Context ===\n"
             
             # Auto-add artifact to current project if one exists
@@ -102,20 +102,20 @@ class ContextProviderCommand(CommandBase):
                     
                     # Add project info to the output
                     project = project_manager.projects[project_manager.current_project_id]
-                    formatted += f"\n🎯 **Artifact Added to Project:** {project.name}\n"
-                    formatted += f"🆔 **Artifact ID:** {artifact_id[:8]}...\n"
-                    formatted += f"📊 **Total Artifacts:** {project.artifacts_count}\n"
-                    formatted += f"💡 **View Project:** `:project open`\n"
+                    formatted += "\n🎯 **Artifact Added to Project:** " + project.name + "\n"
+                    formatted += "🆔 **Artifact ID:** " + artifact_id[:8] + "...\n"
+                    formatted += "📊 **Total Artifacts:** " + str(project.artifacts_count) + "\n"
+                    formatted += "💡 **View Project:** `:project open`\n"
                 
                 else:
-                    formatted += f"\n💡 **Create a project to save this artifact:** `:project create \"My Analysis\"`\n"
+                    formatted += "\n💡 **Create a project to save this artifact:** `:project create \"My Analysis\"`\n"
                     
             except ImportError:
                 # Project manager not available, continue without it
                 pass
             except Exception as e:
                 # Don't fail the command if project management fails
-                formatted += f"\n⚠️ **Project management error:** {str(e)}\n"
+                formatted += "\n⚠️ **Project management error:** " + str(e) + "\n"
             
             return formatted
         
