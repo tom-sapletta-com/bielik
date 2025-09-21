@@ -82,6 +82,41 @@ class ContextProviderCommand(CommandBase):
             for key, value in context_data.items():
                 formatted += f"{key}: {value}\n"
             formatted += "=== End Context ===\n"
+            
+            # Auto-add artifact to current project if one exists
+            try:
+                from bielik.project_manager import get_project_manager
+                project_manager = get_project_manager()
+                
+                if project_manager.current_project_id:
+                    # Create command string from args
+                    command_str = " ".join(args) if args else f"{self.name}:"
+                    
+                    # Add artifact to current project
+                    artifact_id = project_manager.add_artifact(
+                        command_type=self.name,
+                        command=command_str,
+                        content=formatted,
+                        name=f"{self.name}_{len(project_manager.artifacts.get(project_manager.current_project_id, []))+1}"
+                    )
+                    
+                    # Add project info to the output
+                    project = project_manager.projects[project_manager.current_project_id]
+                    formatted += f"\n🎯 **Artifact Added to Project:** {project.name}\n"
+                    formatted += f"🆔 **Artifact ID:** {artifact_id[:8]}...\n"
+                    formatted += f"📊 **Total Artifacts:** {project.artifacts_count}\n"
+                    formatted += f"💡 **View Project:** `:project open`\n"
+                
+                else:
+                    formatted += f"\n💡 **Create a project to save this artifact:** `:project create \"My Analysis\"`\n"
+                    
+            except ImportError:
+                # Project manager not available, continue without it
+                pass
+            except Exception as e:
+                # Don't fail the command if project management fails
+                formatted += f"\n⚠️ **Project management error:** {str(e)}\n"
+            
             return formatted
         
         return f"No context data generated from {self.name}: command"

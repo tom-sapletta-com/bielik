@@ -1,5 +1,6 @@
 # 🦅 Bielik
 
+
 **Bielik** is a groundbreaking Polish language model created by **[Speakleash](https://speakleash.org/)** - a foundation dedicated to the development of Polish artificial intelligence.
 > 🇵🇱 **Bielik** is available on **[huggingface](https://huggingface.co/speakleash)**.
  
@@ -25,6 +26,18 @@ Now you can test it directly in the shell, using several features that allow you
 [![Stars](https://img.shields.io/github/stars/tom-sapletta-com/bielik.svg)](https://github.com/tom-sapletta-com/bielik/stargazers)
 [![Forks](https://img.shields.io/github/forks/tom-sapletta-com/bielik.svg)](https://github.com/tom-sapletta-com/bielik/network)
 
+
+## 📋 **Navigation Menu**
+- [🏗️ Architecture](#️-architecture)
+- [⚡ Quick Start](#-quick-start)
+- [🛠️ Installation](#️-installation)
+- [🎯 Context Provider Commands](#-context-provider-commands)
+- [💬 Usage Examples](#-usage-examples)
+- [🐳 Docker Testing Framework](#-docker-testing-framework)
+- [📚 Documentation](#-documentation)
+- [🤝 Contributing](#-contributing)
+
+---
 
 ## 🏗️ Architecture
 
@@ -323,6 +336,172 @@ docker-compose --profile minimal up bielik-minimal
 
 # Test full version  
 docker-compose --profile full up bielik-full
+```
+
+---
+
+## 🎯 Context Provider Commands
+
+Bielik CLI features a standardized **Context Provider Command** system that allows you to generate structured data for AI analysis. All external commands use the format `name:` (with colon after the command name).
+
+### 📋 **Available Commands**
+
+| Command | Format | Description | Example |
+|---------|--------|-------------|---------|
+| **📁 Folder Analysis** | `folder: <path>` | Directory scanning and file analysis | `folder: ~/Documents` |
+| **🧮 Calculator** | `calc: <expression>` | Mathematical calculations and evaluations | `calc: 2 + 3 * 4` |
+| **📄 Document Reader** | `pdf: <file>` | Text extraction from PDF, DOCX, TXT files | `pdf: report.pdf` |
+
+### 💡 **How Context Provider Commands Work**
+
+1. **Generate Context**: Commands analyze input and create structured data
+2. **AI Integration**: Data is formatted for AI consumption and analysis
+3. **Independent Operation**: Commands work without AI models installed
+4. **Project Integration**: Artifacts are automatically saved to your active project
+4. **Standardized Format**: All external commands use `name:` format for consistency
+
+### 🚀 **Usage Examples**
+
+```bash
+# Directory Analysis
+bielik -p "folder: ."
+bielik -p "folder: ~/Documents --recursive"
+
+# Mathematical Calculations
+bielik -p "calc: 2 + 3 * 4"
+bielik -p "calc: sqrt(16) + sin(pi/2)"
+bielik -p "calc: factorial(5)"
+
+# Document Processing
+bielik -p "pdf: document.pdf"
+bielik -p "pdf: report.docx --metadata"
+bielik -p "pdf: file.pdf --pages=1-5"
+```
+
+### ⚡ **Interactive Usage**
+
+In interactive mode, Context Provider Commands load data for AI analysis:
+
+```bash
+python -m bielik
+
+# Load directory context
+> folder: ~/projects
+
+✅ Context loaded! You can now ask questions about the provided data.
+
+# Ask AI about the loaded context
+> What files are in this directory?
+> Which file is the largest?
+> Are there any Python files?
+```
+
+---
+
+## 🚀 **Project Management System**
+
+Bielik features a comprehensive **session-based project management system** that organizes your analysis artifacts into beautiful, shareable HTML projects.
+
+### 🎯 **Key Features**
+
+- **🗂️ Multi-Project Sessions** - Work on multiple projects simultaneously
+- **📄 HTML Artifact Generation** - Beautiful, interactive project representations
+- **🔄 Automatic Artifact Collection** - Context Provider Commands auto-save to active project
+- **🌐 Browser-Friendly Viewing** - Projects open in your default browser
+- **📊 Rich Metadata** - Embedded project information and artifact tracking
+- **✅ Validation System** - Comprehensive integrity checking
+
+### 📁 **Project Management Commands**
+
+| Command | Description | Example |
+|---------|-------------|---------|
+| `:project create <name>` | Create new project | `:project create "Data Analysis"` |
+| `:project create <name> <desc> --tags <tags>` | Create with metadata | `:project create "ML Project" "Machine learning analysis" --tags ml,data` |
+| `:project switch <id\|name>` | Switch to project | `:project switch data-analysis` |
+| `:project list` | List all projects | `:project list` |
+| `:project info [id]` | Show project details | `:project info` |
+| `:project open [id]` | Open in browser | `:project open` |
+| `:project validate [id]` | Validate project | `:project validate` |
+
+### 🎨 **Project Workflow**
+
+```bash
+# 1. Create a new project
+python -m bielik
+> :project create "Website Analysis" "Analyzing project structure"
+
+✅ Project Created Successfully
+🎯 Project is now active. Use Context Provider Commands to add artifacts.
+
+# 2. Add artifacts using Context Provider Commands
+> folder: ~/my-website
+🎯 Artifact Added to Project: Website Analysis
+
+> calc: file_count * average_size / 1024
+🎯 Artifact Added to Project: Website Analysis
+
+> pdf: documentation.pdf  
+🎯 Artifact Added to Project: Website Analysis
+
+# 3. View your project
+> :project open
+🌐 Project Opened in Browser
+
+# 4. Switch between projects
+> :project list
+📋 Bielik Projects (Current Session)
+
+🎯 **ACTIVE** Website Analysis
+   🆔 ID: abc123ef...
+   📊 Artifacts: 3
+   📅 Created: 2024-12-20 14:30
+
+📁 Data Analysis
+   🆔 ID: def456gh...
+   📊 Artifacts: 5  
+   📅 Created: 2024-12-20 12:15
+
+> :project switch def456gh
+✅ Switched to Project: Data Analysis
+```
+
+### 🏗️ **HTML Project Structure**
+
+Each project generates a beautiful HTML file with:
+
+- **📊 Interactive Dashboard** - Project overview with metadata
+- **🎨 Beautiful Design** - Modern, responsive interface
+- **📑 Artifact Viewer** - Organized display of all artifacts
+- **🔍 Rich Metadata** - Embedded in HTML attributes for programmatic access
+- **🌍 Offline Capability** - Works without internet connection
+
+**Example Project Structure:**
+```
+./bielik_projects/
+├── abc123ef-ghij-klmn-opqr-stuvwxyz0123/
+│   ├── index.html          # Interactive project page
+│   └── metadata.json       # Project metadata
+└── def456gh-ijkl-mnop-qrst-uvwxyz012345/
+    ├── index.html
+    └── metadata.json
+```
+
+### 🔍 **Validation System**
+
+Bielik includes comprehensive validators for:
+
+- **🏠 HTML Artifacts** - Structure, metadata, and compliance checking
+- **⚙️ Environment Files** - .env configuration validation  
+- **📜 Command Scripts** - Code quality and compliance verification
+
+```bash
+# Validate current project
+> :project validate
+🔍 Project Validation Results
+📊 Status: ✅ VALID (0 errors, 0 warnings)
+
+# Validate specific project
+> :project validate abc123ef
 ```
 
 ---

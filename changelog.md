@@ -1,5 +1,58 @@
 # BIELIK CLI - CHANGELOG
 
+## 📋 **Navigation Menu**
+- [🎉 Version 0.1.15 - Major Milestone](#-version-0115---major-milestone-release)
+- [🏆 Critical Objectives Completed](#-critical-objectives-completed)
+- [🎯 Future Releases](#-future-releases)
+- [🔗 Related Documentation](#-related-documentation)
+
+---
+
+## 🚀 **Version 0.1.19** - *2024-12-XX* - **PROJECT MANAGEMENT SYSTEM**
+
+### 🎯 **MAJOR NEW FEATURE: Session-Based Project Management**
+- **Complete project management system** for organizing analysis artifacts
+- **HTML-based project representation** with embedded metadata and beautiful UI
+- **Multi-project session support** - work on multiple projects simultaneously
+- **Automatic artifact collection** - Context Provider Commands auto-add to active project
+- **Browser-friendly project viewing** with interactive HTML files
+- **Comprehensive validation system** for HTML artifacts, .env files, and command scripts
+
+### 📁 **Project Management Commands**
+- `:project create <name> [description] [--tags]` - Create new project with metadata
+- `:project switch <id|name>` - Switch between projects in session
+- `:project list` - List all projects with status and statistics
+- `:project info [id]` - Detailed project information and artifact summary
+- `:project open [id]` - Open project HTML representation in browser
+- `:project validate [id]` - Validate project HTML integrity and metadata
+
+### 🎨 **HTML Artifact Features**
+- **Physical HTML files** stored in `./bielik_projects/` directory
+- **Rich metadata embedded** in HTML attributes (project ID, session ID, timestamps)
+- **Beautiful responsive design** with gradient headers and modern styling
+- **Interactive artifact viewer** with syntax highlighting and content organization
+- **Offline browsing capability** - projects work without internet connection
+- **XML-compatible metadata** structure for programmatic access
+
+### 🔍 **Validation System**
+- **HTML Artifact Validator** - Checks metadata integrity, structure, and compliance
+- **Environment File Validator** - Validates .env configuration files
+- **Command Script Validator** - Ensures command compliance and code quality
+- **Comprehensive error reporting** with detailed suggestions and warnings
+
+### 🔧 **Integration Improvements**
+- **Auto-artifact addition** - Context Provider Commands automatically save to active project
+- **Seamless workflow integration** - No changes needed to existing command usage
+- **Project status indicators** in command output with quick action suggestions
+- **Smart project switching** by ID or name matching
+
+### ✅ **Bug Fixes**
+- **Fixed PDF command error** - Removed obsolete `init_mcp()` call causing AttributeError
+- **Completed Context Provider Command standardization** - All commands use `name:` format
+- **Added missing abstract method implementations** in ProjectCommand class
+
+---
+
 ## 🎉 **Version 0.1.15 - MAJOR MILESTONE RELEASE**
 *Date: September 21, 2025*
 

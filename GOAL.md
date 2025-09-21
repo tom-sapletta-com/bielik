@@ -141,4 +141,39 @@ make install
 bielik -p "folder: ."
 bielik -p "calc: 2 + 3 * 4" 
 bielik -p "pdf: document.pdf"
+
+# Test Project Management System
+python -m bielik
+> :project create "Analysis Project" "My analysis work"
+> folder: ~/documents
+> calc: 150 * 0.85
+> :project info
+> :project open
 ```
+
+---
+
+## 🚀 **NEW: Project Management System**
+
+### 🎯 **Session-Based Project Organization**
+
+Bielik now features a comprehensive project management system that automatically organizes your analysis artifacts into beautiful, shareable HTML projects:
+
+**Key Features:**
+- **🗂️ Multi-Project Sessions** - Work on multiple projects simultaneously
+- **📄 HTML Artifact Generation** - Beautiful, interactive project representations  
+- **🔄 Automatic Collection** - Context Provider Commands auto-save to active project
+- **🌐 Browser Viewing** - Projects open as interactive HTML pages
+- **📊 Rich Metadata** - Embedded project information and tracking
+- **✅ Validation System** - Comprehensive integrity checking
+
+**Project Commands:**
+- `:project create <name> [description] [--tags]` - Create new project
+- `:project switch <id|name>` - Switch between projects  
+- `:project list` - List all projects with status
+- `:project info [id]` - Show detailed project information
+- `:project open [id]` - Open project HTML in browser
+- `:project validate [id]` - Validate project integrity
+
+**Integration with Context Providers:**
+All Context Provider Commands (`folder:`, `calc:`, `pdf:`) automatically add their results as artifacts to your active project, creating a comprehensive analysis record with beautiful HTML visualization.

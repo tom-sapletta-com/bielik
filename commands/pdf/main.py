@@ -54,9 +54,6 @@ class DocumentReaderCommand(ContextProviderCommand):
             '.rtf': self._read_rtf_with_textract,
             '.odt': self._read_odt_with_textract,
         }
-        
-        # Initialize MCP for document processing
-        self.init_mcp("document-processor", "text-extraction")
     
     def provide_context(self, args: List[str], context: Dict[str, Any]) -> Dict[str, Any]:
         """

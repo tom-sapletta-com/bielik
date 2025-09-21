@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "bielik"
-version = "0.1.17"
+version = "0.1.20"
 description = "Bielik — local chat client (CLI + web) with HuggingFace Integration"
 authors = [{name = "Tom Sapletta"}]
 license = "Apache-2.0"
@@ -38,7 +38,7 @@ dependencies = [
   "python-dotenv>=0.19.0,<2.0.0",
   
   # Text processing & document analysis  
-  "beautifulsoup4>=4.9.0,<5.0.0",
+  "beautifulsoup4>=4.8.0,<5.0.0",  # Compatible with textract requirement
   "html2text>=2020.1.16,<2025.0.0",
   "python-magic>=0.4.24,<1.0.0",
   "pypdf>=3.0.0,<4.0.0",
