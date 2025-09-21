@@ -15,6 +15,7 @@ from .send_chat import send_chat
 from .setup import SetupManager
 from ..config import get_config, get_logger
 from ..content_processor import get_content_processor
+from ..hf_models import get_model_manager
 
 
 def parse_args():
@@ -83,6 +84,7 @@ def main():
     content_processor = get_content_processor()
     command_processor = CommandProcessor()
     setup_manager = SetupManager()
+    hf_model_manager = get_model_manager()
     
     # Handle CLI arguments
     current_model = args.model
@@ -182,7 +184,7 @@ def main():
                 if new_model is not None:
                     current_model = new_model
                     # If switching to local model, enable local mode
-                    if current_model in setup_manager.model_manager.model_manager.SPEAKLEASH_MODELS:
+                    if current_model in hf_model_manager.SPEAKLEASH_MODELS:
                         use_local_model = True
                     else:
                         use_local_model = args.use_local or (args.local_model is not None)

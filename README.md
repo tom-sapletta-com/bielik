@@ -1,3 +1,4 @@
+![terminal](terminal.png)
 # 🦅 bielik
 
 [![PyPI](https://img.shields.io/pypi/v/bielik.svg)](https://pypi.org/project/bielik/)
@@ -78,14 +79,16 @@
   - **📦 Installation** — Cross-platform Ollama installation (Linux/macOS)
   - **🚀 Configuration** — Downloads and configures Bielik model
   - **🛠️ Interactive** — User-friendly prompts and error handling
-- **🖥️ Enhanced CLI** `bielik` — Interactive chat shell with new capabilities
-  - **📋 Commands** — `:help`, `:status`, `:setup`, `:clear`, `:exit`
-  - **⚙️ Arguments** — `--setup`, `--no-setup`, `--model`, `--host`
-  - **🔄 Fallback** — REST API primary, ollama lib secondary
+- **🖥️ Enhanced CLI** `bielik` — Interactive chat shell with modular architecture
+  - **📋 Commands** — `:help`, `:status`, `:setup`, `:clear`, `:exit`, `:models`, `:download`, `:delete`, `:switch`
+  - **⚙️ Arguments** — `--setup`, `--no-setup`, `--model`, `--host`, `--use-local`, `--local-model`
+  - **🤗 HF Integration** — Direct Hugging Face model management and local execution
+  - **🔄 Fallback** — REST API primary, ollama lib secondary, local models tertiary
   - **🌍 Cross-platform** — Windows, macOS, Linux support
 - **🐍 Python API** — Programmatic access via `BielikClient` class
   - **💬 Chat methods** — `chat()`, `query()`, conversation management
   - **🔧 System control** — Status checking, auto-setup, model management
+  - **🤗 HF Models** — Download, manage, and run SpeakLeash models locally
   - **📤 Export** — Conversation history in JSON, text, markdown formats
 - **🌐 Web Server** (FastAPI on port 8888):  
   - **📡 REST** — `POST /chat` endpoint for JSON communication
@@ -200,6 +203,8 @@ uvicorn bielik.server:app --port 8888
 
 ### 🖥️ CLI Features & Options
 
+#### Command-Line Arguments (when starting bielik)
+
 ```bash
 # Basic usage
 bielik                                    # Start interactive chat with auto-setup
@@ -209,15 +214,47 @@ bielik --setup                           # Force setup mode
 bielik --no-setup                        # Skip automatic setup
 bielik --model other-model               # Use different model
 bielik --host http://other-host:11434    # Use different Ollama server
+bielik --use-local                       # Use local HuggingFace models (bypass Ollama)
+bielik --local-model model-name          # Specify local model to use
 bielik --help                            # Show all options
 ```
 
-**Available commands in CLI:**
-- `:help` - show help and commands
-- `:status` - check Ollama connection and model availability
-- `:setup` - run interactive setup system
-- `:clear` - clear conversation history
-- `:exit` - quit (or Ctrl+C)
+#### Interactive Commands (inside bielik chat session)
+
+**⚠️ Important:** These commands only work **inside** the interactive chat session, not as command-line arguments.
+
+```bash
+# Start interactive session first
+$ bielik
+
+# Then use these commands inside the chat:
+🧑 You: :help             # Show help and commands
+🧑 You: :status           # Check Ollama connection and model availability
+🧑 You: :setup            # Run interactive setup system
+🧑 You: :models           # List available and downloaded HuggingFace models
+🧑 You: :download <model> # Download a SpeakLeash model from Hugging Face
+🧑 You: :delete <model>   # Delete a downloaded model
+🧑 You: :switch <model>   # Switch to a different model for execution
+🧑 You: :storage          # Show model storage statistics
+🧑 You: :clear            # Clear conversation history
+🧑 You: :exit             # Quit (or Ctrl+C)
+```
+
+#### Usage Examples
+
+```bash
+# ✅ Correct - Start with specific model
+$ bielik --model SpeakLeash/Bielik-4.5B-v3.0-Instruct-GGUF
+
+# ✅ Correct - Interactive commands inside session
+$ bielik
+🧑 You: :status
+🧑 You: :switch SpeakLeash/Bielik-4.5B-v3.0-Instruct-GGUF
+
+# ❌ Incorrect - Interactive commands as CLI arguments
+$ bielik :status          # This won't work!
+$ bielik :switch model    # This won't work!
+```
 
 ### 🐍 Python API
 
@@ -325,6 +362,8 @@ OLLAMA_HOST=http://localhost:11435 ollama serve --port 11435
 # Check Ollama status
 bielik :status
 
+bielik :switch SpeakLeash/Bielik-4.5B-v3.0-Instruct-GGUF
+
 # Restart Ollama service
 pkill ollama && ollama serve  # Linux/macOS
 
@@ -376,22 +415,37 @@ pip install -e .[ollama]
 ```
 bielik/
 ├── bielik/
-│   ├── __init__.py         # Package initialization
-│   ├── cli.py              # CLI with auto-setup system
-│   ├── server.py           # FastAPI web server
-│   └── client.py           # Python API client class
+│   ├── __init__.py          # Package initialization
+│   ├── cli.py               # CLI entry point (wrapper)
+│   ├── client.py            # Client entry point (wrapper)
+│   ├── server.py            # FastAPI web server
+│   ├── config.py            # Configuration management
+│   ├── hf_models.py         # Hugging Face model management
+│   ├── content_processor.py # Content processing utilities
+│   ├── cli/                 # Modular CLI components
+│   │   ├── __init__.py
+│   │   ├── main.py          # Main CLI entry and argument parsing
+│   │   ├── commands.py      # Command processing and execution
+│   │   ├── models.py        # HF model management CLI
+│   │   ├── setup.py         # Interactive setup manager
+│   │   └── send_chat.py     # Chat communication handling
+│   └── client/              # Modular client components
+│       ├── __init__.py      # Client package exports
+│       ├── core.py          # Core BielikClient class
+│       ├── model_manager.py # HF model operations for client
+│       └── utils.py         # Client utility functions
 ├── tests/
 │   ├── __init__.py
-│   ├── test_cli.py         # CLI unit tests
-│   └── test_server.py      # Server unit tests
-├── pyproject.toml          # Modern Python packaging
-├── setup.cfg               # Package configuration
-├── MANIFEST.in             # Package manifest
-├── LICENSE                 # Apache 2.0 license
-├── README.md               # This documentation
-├── Makefile                # Development automation
-├── todo.md                 # Project specifications
-└── .github/workflows/      # CI/CD automation
+│   ├── test_cli.py          # CLI unit tests
+│   └── test_server.py       # Server unit tests
+├── pyproject.toml           # Modern Python packaging
+├── setup.cfg                # Package configuration
+├── MANIFEST.in              # Package manifest
+├── LICENSE                  # Apache 2.0 license
+├── README.md                # This documentation
+├── Makefile                 # Development automation
+├── todo.md                  # Project specifications
+└── .github/workflows/       # CI/CD automation
     └── python-publish.yml
 ```
 
