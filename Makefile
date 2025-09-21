@@ -1,10 +1,11 @@
 .PHONY: install dev lint test build publish clean setup-dev bump-patch bump-minor bump-major publish-patch publish-minor publish-major
 
 install:
-	python -m venv .venv
+	#rm -rf .venv
+	#python3 -m venv .venv
 	source .venv/bin/activate
-	python3 -m pip install --upgrade pip
-	python3 -m pip install .
+	@python3 -m pip install --upgrade pip
+	@python3 -m pip install -e .
 
 setup-dev:
 	python3 -m pip install --upgrade pip

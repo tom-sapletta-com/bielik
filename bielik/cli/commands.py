@@ -30,7 +30,7 @@ class CommandProcessor:
         
         print("🦅 " + "="*50)
         print(f"   {assistant_name.upper()} - Polish AI Assistant")
-        print("   Powered by Ollama + Speakleash")
+        print("   Powered by Ollama + HF + Speakleash")
         print("="*53)
         print()
         print(f"👋 Welcome {user_name}!")

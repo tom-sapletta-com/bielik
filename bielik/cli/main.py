@@ -19,6 +19,180 @@ from ..content_processor import get_content_processor
 from ..hf_models import get_model_manager
 
 
+def validate_model_availability(model_name: str, model_manager) -> bool:
+    """Check if a model is available (either via Ollama or HF)."""
+    try:
+        # Check if it's a HuggingFace model
+        if model_name in model_manager.SPEAKLEASH_MODELS:
+            return model_manager.is_model_downloaded(model_name)
+        
+        # Check if it's an Ollama model by trying to connect
+        from .setup import SetupManager
+        setup_manager = SetupManager()
+        ollama_status = setup_manager.check_ollama_connection()
+        
+        if ollama_status["available"]:
+            available_models = ollama_status.get("models", [])
+            return model_name in [m.get("name", "") for m in available_models]
+        
+        return False
+    except Exception:
+        return False
+
+
+def find_fallback_model(model_manager):
+    """Find a working fallback model."""
+    # First try to find downloaded HF models from registry
+    try:
+        registry = model_manager.list_downloaded_models()
+        if registry:
+            # Get the first available HF model from registry
+            for model_name, model_info in registry.items():
+                if model_manager.is_model_downloaded(model_name):
+                    print(f"🔍 Found downloaded HF model: {model_name}")
+                    return model_name
+    except Exception as e:
+        print(f"⚠️  Could not check HF models registry: {e}")
+    
+    # Then try Ollama models if available
+    try:
+        from .setup import SetupManager
+        setup_manager = SetupManager()
+        ollama_status = setup_manager.check_ollama_connection()
+        
+        if ollama_status["available"] and ollama_status.get("models"):
+            # Return the first available Ollama model
+            models = ollama_status["models"]
+            if models:
+                print(f"🔍 Found Ollama model: {models[0].get('name')}")
+                return models[0].get("name")
+    except Exception:
+        pass
+    
+    return None
+
+
+def execute_prompt(prompt: str, model: str, use_local: bool = False) -> str:
+    """Execute a single prompt and return the response."""
+    from .send_chat import send_chat
+    from ..content_processor import get_content_processor
+    from ..hf_models import HAS_LLAMA_CPP
+    
+    # Initialize components
+    content_processor = get_content_processor()
+    cli_settings = get_cli_settings()
+    hf_model_manager = get_model_manager()
+    
+    # Prepare system prompt with dynamic assistant name
+    assistant_name = cli_settings.get_assistant_name()
+    system_prompt = (f"You are {assistant_name}, a helpful Polish AI assistant. "
+                     f"Respond in Polish unless asked otherwise.")
+    
+    # Process content in user message (URLs, file paths)
+    enhanced_prompt = content_processor.process_content_in_text(prompt)
+    
+    # Create messages
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": enhanced_prompt}
+    ]
+    
+    # Smart local/API decision for Bielik models
+    if model in hf_model_manager.SPEAKLEASH_MODELS and use_local:
+        # Check if local execution is actually possible
+        if not HAS_LLAMA_CPP or not hf_model_manager.is_model_downloaded(model):
+            print(f"💡 Local model not available, trying API fallback...")
+            use_local = False  # Allow fallback to Ollama->HF API chain
+    
+    # Send to model and return response
+    return send_chat(messages, model=model, use_local=use_local)
+
+
+def run_model_tests(model: str, use_local: bool = False) -> None:
+    """Run a series of tests on the specified model."""
+    print(f"🧪 Running model tests for: {model}")
+    print("=" * 50)
+    
+    test_cases = [
+        {
+            "name": "Basic Math",
+            "prompt": "Ile jest 2 + 2?",
+            "expected_keywords": ["4", "cztery"]
+        },
+        {
+            "name": "Polish Language",
+            "prompt": "Napisz krótkie zdanie po polsku o pogodzie",
+            "expected_keywords": ["pogoda", "słońce", "deszcz", "chmury", "temperatura"]
+        },
+        {
+            "name": "Simple Question",
+            "prompt": "Co to jest sztuczna inteligencja?",
+            "expected_keywords": ["AI", "inteligencja", "komputer", "algorytm", "uczenie"]
+        },
+        {
+            "name": "Creative Writing",
+            "prompt": "Napisz krótką historyjkę o kocie",
+            "expected_keywords": ["kot", "miau", "łapy", "ogon"]
+        },
+        {
+            "name": "Code Generation",
+            "prompt": "Napisz prostą funkcję Python, która dodaje dwie liczby",
+            "expected_keywords": ["def", "return", "+", "python"]
+        }
+    ]
+    
+    results = []
+    
+    for i, test in enumerate(test_cases, 1):
+        print(f"\n🧪 Test {i}/5: {test['name']}")
+        print(f"📝 Prompt: {test['prompt']}")
+        
+        try:
+            response = execute_prompt(test['prompt'], model, use_local)
+            print(f"🤖 Response: {response[:100]}...")
+            
+            # Check if response contains expected keywords
+            response_lower = response.lower()
+            found_keywords = [kw for kw in test['expected_keywords'] 
+                            if kw.lower() in response_lower]
+            
+            success = len(found_keywords) > 0
+            results.append({
+                'test': test['name'],
+                'success': success,
+                'keywords_found': found_keywords,
+                'response_length': len(response)
+            })
+            
+            status = "✅ PASS" if success else "❌ FAIL"
+            print(f"📊 Status: {status} (Found: {', '.join(found_keywords)})")
+            
+        except Exception as e:
+            print(f"❌ ERROR: {str(e)}")
+            results.append({
+                'test': test['name'],
+                'success': False,
+                'error': str(e)
+            })
+    
+    # Summary
+    print(f"\n{'='*50}")
+    print("📊 TEST SUMMARY")
+    print(f"{'='*50}")
+    
+    passed = sum(1 for r in results if r['success'])
+    total = len(results)
+    
+    print(f"✅ Passed: {passed}/{total}")
+    print(f"❌ Failed: {total - passed}/{total}")
+    print(f"📈 Success Rate: {(passed/total)*100:.1f}%")
+    
+    if passed == total:
+        print(f"\n🎉 All tests passed! Model {model} is working correctly.")
+    else:
+        print(f"\n⚠️  Some tests failed. Check model configuration or connectivity.")
+
+
 def parse_args():
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(
@@ -26,19 +200,25 @@ def parse_args():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Usage Examples:
-  bielik                                    # Standard session
+  bielik                                    # Standard interactive session
   bielik --model other-model               # Use different model
   bielik --setup                           # Run interactive configuration
   bielik --no-setup                        # Skip automatic configuration
   bielik --use-local                       # Use local HF models
   bielik --local-model MODEL_NAME          # Specify local model
+  bielik -p "napisz ile jest dwa razy dwa" # Execute single prompt
+  bielik --prompt "What is 2+2?"          # Execute single prompt (alias)
+  bielik -p "test" -m bielik-4.5b          # Execute prompt with specific model
+  bielik --prompt "test" --model MODEL     # Execute prompt with model (long form)
+  bielik --test-model                      # Run model performance tests
+  bielik --test-model -m custom-model      # Test specific model
         """
     )
     
     config = get_config()
     
     parser.add_argument(
-        "--model", 
+        "-m", "--model", 
         default=config.BIELIK_MODEL,
         help=f"Model to use (default: {config.BIELIK_MODEL})"
     )
@@ -72,6 +252,17 @@ Usage Examples:
         help="Name of local HF model to use"
     )
     
+    parser.add_argument(
+        "-p", "--prompt",
+        help="Execute single prompt and exit (non-interactive mode)"
+    )
+    
+    parser.add_argument(
+        "--test-model",
+        action="store_true",
+        help="Run model tests and exit"
+    )
+    
     return parser.parse_args()
 
 
@@ -88,12 +279,58 @@ def main():
     hf_model_manager = get_model_manager()
     cli_settings = get_cli_settings()
     
-    # Handle CLI arguments
+    # Smart model selection with .env fallback
     current_model = args.model
     use_local_model = args.use_local
+    
+    # Load last used model from .env if no model specified via CLI
+    if current_model == config.BIELIK_MODEL:  # Default model from config
+        env_model = cli_settings.get_current_model()
+        if env_model and env_model != config.BIELIK_MODEL:
+            current_model = env_model
+            logger.info(f"Loaded last used model from .env: {current_model}")
+    
+    # Handle local model specification
     if args.local_model:
         current_model = args.local_model
         use_local_model = True
+    
+    # Validate model availability and set fallback logic
+    model_available = validate_model_availability(current_model, hf_model_manager)
+    if not model_available:
+        # Try to find a working fallback model
+        fallback_model = find_fallback_model(hf_model_manager)
+        if fallback_model:
+            print(f"⚠️  Model '{current_model}' not available, using fallback: {fallback_model}")
+            current_model = fallback_model
+            if current_model in hf_model_manager.SPEAKLEASH_MODELS:
+                use_local_model = True
+        else:
+            print(f"❌ No working models available. Please check your configuration.")
+            if not args.prompt and not args.test_model:
+                print("💡 Try: bielik --setup")
+                sys.exit(1)
+    
+    # Handle non-interactive modes
+    if args.prompt:
+        # Execute single prompt and exit
+        try:
+            print(f"🤖 Using model: {current_model}")
+            response = execute_prompt(args.prompt, current_model, use_local_model)
+            print(response)
+            return
+        except Exception as e:
+            print(f"❌ Error executing prompt: {str(e)}")
+            sys.exit(1)
+    
+    if args.test_model:
+        # Run model tests and exit
+        try:
+            run_model_tests(current_model, use_local_model)
+            return
+        except Exception as e:
+            print(f"❌ Error running tests: {str(e)}")
+            sys.exit(1)
     
     # Update configuration if host is specified
     if args.host != config.OLLAMA_HOST:

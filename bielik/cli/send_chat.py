@@ -3,10 +3,11 @@
 Bielik CLI Chat Communication - Handles message sending to models.
 
 This module provides the communication layer between the CLI and various
-model backends (Ollama REST API, Ollama library, local HF models).
+model backends (Ollama REST API, Ollama library, local HF models, HF API).
 """
 
 import requests
+import os
 from typing import List, Dict, Optional
 
 from ..config import get_config, get_logger
@@ -71,8 +72,15 @@ class ChatCommunicator:
                 elif not self.model_manager.is_model_downloaded(model):
                     return f"[LOCAL MODEL ERROR] Model {model} not downloaded. Use :download {model}"
         
-        # Use Ollama (REST API first, then library fallback)
-        return self._send_to_ollama(messages, model)
+        # Use Ollama (REST API first, then library fallback, then HF API)
+        ollama_response = self._send_to_ollama(messages, model)
+        
+        # If Ollama fails, try HF API as last fallback
+        if ollama_response.startswith("[ERROR]") or ollama_response.startswith("[OLLAMA"):
+            self.logger.info("Ollama unavailable, trying HF API fallback...")
+            return self._send_to_hf_api(messages, model)
+        
+        return ollama_response
     
     def _send_to_ollama(self, messages: List[Dict], model: str) -> str:
         """Send messages to Ollama using REST API or library fallback."""
@@ -102,6 +110,71 @@ class ChatCommunicator:
                 return f"[OLLAMA LIB ERROR] {e}"
 
         return "[ERROR] No working Ollama integration (REST and lib failed)."
+    
+    def _send_to_hf_api(self, messages: List[Dict], model: str) -> str:
+        """Send messages to HuggingFace API as fallback."""
+        try:
+            # Check if HF token is available
+            hf_token = os.environ.get('HUGGINGFACE_TOKEN') or os.environ.get('HF_TOKEN')
+            if not hf_token:
+                return "[HF API ERROR] HuggingFace token not found. Set HUGGINGFACE_TOKEN environment variable."
+            
+            # Map model name to HF API format
+            if model.startswith("SpeakLeash/"):
+                hf_model = model  # Already in correct format
+            elif "bielik" in model.lower():
+                # Default to bielik-7b if model mapping unclear
+                hf_model = "SpeakLeash/bielik-7b-instruct-v0.1"
+            else:
+                return f"[HF API ERROR] Model {model} not supported via HF API"
+            
+            # Format messages for HF API
+            formatted_messages = []
+            for msg in messages:
+                if msg.get("role") in ["system", "user", "assistant"]:
+                    formatted_messages.append({
+                        "role": msg["role"], 
+                        "content": msg["content"]
+                    })
+            
+            if not formatted_messages:
+                return "[HF API ERROR] No valid messages to send"
+            
+            # Prepare HF API request
+            api_url = f"https://api-inference.huggingface.co/models/{hf_model}/v1/chat/completions"
+            headers = {
+                "Authorization": f"Bearer {hf_token}",
+                "Content-Type": "application/json"
+            }
+            
+            payload = {
+                "model": hf_model,
+                "messages": formatted_messages,
+                "max_tokens": 1000,
+                "temperature": 0.7,
+                "stream": False
+            }
+            
+            # Send request
+            response = requests.post(api_url, json=payload, headers=headers, timeout=30)
+            response.raise_for_status()
+            
+            data = response.json()
+            choice = data.get("choices", [{}])[0]
+            content = choice.get("message", {}).get("content")
+            
+            if content:
+                self.logger.info(f"HF API successful for model {hf_model}")
+                return content.strip()
+            else:
+                return "[HF API ERROR] No response content received"
+                
+        except requests.exceptions.RequestException as e:
+            self.logger.error(f"HF API request failed: {e}")
+            return f"[HF API ERROR] Request failed: {e}"
+        except Exception as e:
+            self.logger.error(f"HF API error: {e}")
+            return f"[HF API ERROR] {e}"
 
 
 # Global communicator instance

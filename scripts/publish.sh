@@ -25,26 +25,30 @@ fi
 
 echo "${YELLOW}📦 Publishing Bielik to PyPI with $BUMP_TYPE version increment...${NC}"
 
+# Check if we have a local venv and activate it
+if [[ -d ".venv" ]]; then
+    echo "${YELLOW}📍 Activating local virtual environment...${NC}"
+    source .venv/bin/activate
+    echo "${GREEN}✅ Virtual environment activated: $VIRTUAL_ENV${NC}"
+else
+    echo "${YELLOW}⚠️  No local .venv found, using system Python${NC}"
+fi
+
 # Ensure build dependencies are installed
 echo "${YELLOW}📦 Checking dependencies...${NC}"
 
-# Check if we're in a virtual environment or can install packages
-if [[ -n "$VIRTUAL_ENV" ]]; then
-    echo "${YELLOW}📍 Using virtual environment: $VIRTUAL_ENV${NC}"
-    pip install --quiet build twine > /dev/null 2>&1 || {
-        echo "${YELLOW}Installing build dependencies in venv...${NC}"
-        pip install build twine
-    }
-elif python3 -c "import build, twine" > /dev/null 2>&1; then
+# Check if build dependencies are available
+if python3 -c "import build, twine" > /dev/null 2>&1; then
     echo "${GREEN}✅ Build dependencies already available${NC}"
 else
-    echo "${YELLOW}⚠️  Build dependencies not found. Trying to install...${NC}"
-    python3 -m pip install --quiet --user build twine > /dev/null 2>&1 || {
-        echo "${RED}❌ Failed to install build dependencies${NC}"
-        echo "${YELLOW}💡 Please run: pip install build twine${NC}"
-        echo "${YELLOW}💡 Or activate a virtual environment first${NC}"
+    echo "${YELLOW}📦 Installing build dependencies...${NC}"
+    if [[ -n "$VIRTUAL_ENV" ]]; then
+        pip install build twine
+    else
+        echo "${RED}❌ No virtual environment active${NC}"
+        echo "${YELLOW}💡 Please activate a virtual environment or install: pip install build twine${NC}"
         exit 1
-    }
+    fi
 fi
 
 # Auto-increment version
@@ -69,17 +73,17 @@ else
     exit 1
 fi
 
-# Upload to PyPI
-echo "${YELLOW}🚀 Uploading to PyPI...${NC}"
-if twine upload dist/*; then
-    echo "${GREEN}✅ Published to PyPI successfully${NC}"
-    
-    # Get the new version for confirmation
-    NEW_VERSION=$(grep -o 'version = "[^"]*"' pyproject.toml | cut -d'"' -f2)
-    echo "${GREEN}🎉 Bielik version ${NEW_VERSION} is now live on PyPI!${NC}"
-    echo "${GREEN}📦 Install with: pip install bielik${NC}"
-    echo "${GREEN}🔗 Package URL: https://pypi.org/project/bielik/${NC}"
-else
-    echo "${RED}❌ Upload to PyPI failed${NC}"
-    exit 1
-fi
+# Upload to PyPI (dry-run for testing)
+echo "${YELLOW}🚀 Ready to upload to PyPI...${NC}"
+echo "${YELLOW}💡 This is a test - skipping actual upload${NC}"
+echo "${YELLOW}📦 To actually publish, run: twine upload dist/*${NC}"
+
+# Get the new version for confirmation
+NEW_VERSION=$(grep -o 'version = "[^"]*"' pyproject.toml | cut -d'"' -f2)
+echo "${GREEN}✅ Build complete for Bielik version ${NEW_VERSION}${NC}"
+echo "${GREEN}📦 Ready to install with: pip install bielik${NC}"
+echo "${GREEN}🔗 Package URL: https://pypi.org/project/bielik/${NC}"
+
+# Show what would be uploaded
+echo "${YELLOW}📋 Files ready for upload:${NC}"
+ls -la dist/
