@@ -3,12 +3,12 @@
 [![PyPI](https://img.shields.io/pypi/v/bielik.svg)](https://pypi.org/project/bielik/)
 [![Python](https://img.shields.io/pypi/pyversions/bielik.svg)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-[![Build](https://img.shields.io/github/actions/workflow/status/tomsapletta/bielik/python-app.yml?branch=main)](https://github.com/tomsapletta/bielik/actions)
+[![Build](https://img.shields.io/github/actions/workflow/status/tom-sapletta-com/bielik/python-app.yml?branch=main)](https://github.com/tom-sapletta-com/bielik/actions)
 [![Downloads](https://img.shields.io/pypi/dm/bielik.svg)](https://pypi.org/project/bielik/)
 [![Code style: flake8](https://img.shields.io/badge/code%20style-flake8-black.svg)](https://flake8.pycqa.org/)
-[![Issues](https://img.shields.io/github/issues/tomsapletta/bielik.svg)](https://github.com/tomsapletta/bielik/issues)
-[![Stars](https://img.shields.io/github/stars/tomsapletta/bielik.svg)](https://github.com/tomsapletta/bielik/stargazers)
-[![Forks](https://img.shields.io/github/forks/tomsapletta/bielik.svg)](https://github.com/tomsapletta/bielik/network)
+[![Issues](https://img.shields.io/github/issues/tom-sapletta-com/bielik.svg)](https://github.com/tom-sapletta-com/bielik/issues)
+[![Stars](https://img.shields.io/github/stars/tom-sapletta-com/bielik.svg)](https://github.com/tom-sapletta-com/bielik/stargazers)
+[![Forks](https://img.shields.io/github/forks/tom-sapletta-com/bielik.svg)](https://github.com/tom-sapletta-com/bielik/network)
 
 **Author:** Tom Sapletta  
 **License:** Apache-2.0
@@ -228,7 +228,7 @@ Przeanalizuj to zdjęcie: image.jpg
 Use Docker for isolated testing environments:
 ```bash
 # Clone repository
-git clone https://github.com/tomsapletta/bielik.git
+git clone https://github.com/tom-sapletta-com/bielik.git
 cd bielik
 
 # Test minimal version
@@ -389,7 +389,7 @@ docker run -it \
 **Development setup:**
 ```bash
 # Clone and test
-git clone https://github.com/tomsapletta/bielik.git
+git clone https://github.com/tom-sapletta-com/bielik.git
 cd bielik
 
 # Run automated tests
@@ -510,7 +510,7 @@ docker-compose --profile minimal up
 
 ### Getting Help
 
-- **GitHub Issues:** [Report bugs and feature requests](https://github.com/tomsapletta/bielik/issues)
+- **GitHub Issues:** [Report bugs and feature requests](https://github.com/tom-sapletta-com/bielik/issues)
 - **Command Help:** `python -m bielik --help` or `:help` in CLI
 - **Test Environment:** Use Docker for isolated testing
 - **Check Status:** Use `:settings` command for current configuration
@@ -520,7 +520,7 @@ docker-compose --profile minimal up
 ## 📝 Development
 
 ```bash
-git clone https://github.com/tomsapletta/bielik.git
+git clone https://github.com/tom-sapletta-com/bielik.git
 cd bielik
 python -m venv .venv
 source .venv/bin/activate

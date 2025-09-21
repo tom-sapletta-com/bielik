@@ -44,6 +44,7 @@ class CommandProcessor:
         print("  :download <model> - download HF model (auto-switches)")
         print("  :delete <model>   - delete downloaded model")
         print("  :switch <model>   - switch to model")
+        print("  :model <model>    - switch to model (alias for :switch)")
         print("  :storage - show storage statistics")
         print("  :name <name>      - change your display name")
         print("  :settings         - show current settings")
