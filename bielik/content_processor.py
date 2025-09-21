@@ -28,6 +28,7 @@ try:
     HAS_TEXTRACT = True
 except ImportError:
     HAS_TEXTRACT = False
+    textract = None
 
 try:
     import pypdf

@@ -37,15 +37,18 @@ dependencies = [
   "beautifulsoup4>=4.9.0,<5.0.0",
   "html2text>=2020.1.16,<2025.0.0",
   "python-magic>=0.4.24,<1.0.0",
-  "textract>=1.6.3,<2.0.0; sys_platform != 'win32'",
+  # "textract>=1.6.3,<2.0.0; sys_platform != 'win32'",  # Disabled due to dependency conflicts
   "pypdf>=3.0.0,<4.0.0",
   "python-docx>=0.8.11,<1.0.0",
-  "huggingface_hub>=0.16.0,<1.0.0",
-  "llama-cpp-python>=0.2.0,<1.0.0"
+  "huggingface_hub>=0.16.0,<1.0.0"
 ]
 
 [project.optional-dependencies]
 ollama = ["ollama>=0.1.0,<1.0.0"]
+local = [
+  "llama-cpp-python>=0.2.0,<1.0.0",
+  "textract>=1.6.3,<1.6.5; sys_platform != 'win32'"
+]
 gpu = [
   "llama-cpp-python[cuda]>=0.2.0,<1.0.0",
   "torch>=2.0.0,<3.0.0"

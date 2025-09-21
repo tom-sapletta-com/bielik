@@ -1,36 +1,30 @@
 #!/usr/bin/env python3
 """
-bielik CLI - interactive chat shell using Ollama.
-Tries REST API first, falls back to `ollama` library if available.
+Bielik CLI - Interactive chat shell with modular architecture.
+
+This module serves as the main entry point for the Bielik CLI application.
+It now uses a modular architecture with separate components for setup,
+commands, model management, and chat communication.
+
+All strings and comments have been converted to English as requested.
+
+The original 716-line monolithic CLI has been refactored into:
+- cli/main.py: Main entry point and argument parsing
+- cli/commands.py: Command processing and help
+- cli/setup.py: Interactive setup and system configuration  
+- cli/models.py: HF model management commands
+- cli/send_chat.py: Chat communication layer
 """
 
-import os
-import sys
-import requests
-import subprocess
-import platform
-import shutil
-import argparse
+from .cli.main import main
 
-from .config import get_config, get_logger
-from .content_processor import get_content_processor
-from .hf_models import get_model_manager, HAS_LLAMA_CPP
+# Backward compatibility exports
+from .cli.send_chat import send_chat
+from .cli.commands import CommandProcessor
+from .cli.setup import SetupManager
+from .cli.models import ModelManager as CLIModelManager
 
-# Global configuration and logger
-config = get_config()
-logger = get_logger(__name__)
-content_processor = get_content_processor()
-model_manager = get_model_manager()
-
-# try to import official ollama client
-try:
-    import ollama
-    HAVE_OLLAMA = True
-except ImportError:
-    HAVE_OLLAMA = False
-
-
-def send_chat(messages, model=None, use_local=False):
+__all__ = ['main', 'send_chat', 'CommandProcessor', 'SetupManager', 'CLIModelManager']
     """Send chat messages to Ollama or local HF model."""
     if model is None:
         model = config.BIELIK_MODEL
