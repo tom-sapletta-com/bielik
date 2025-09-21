@@ -10,6 +10,7 @@ from typing import List, Dict, Optional, Tuple
 from .setup import SetupManager
 from .models import ModelManager
 from .settings import get_cli_settings
+from .command_api import get_command_registry
 from ..config import get_config, get_logger
 
 
@@ -23,6 +24,9 @@ class CommandProcessor:
         self.model_manager = ModelManager()
         self.settings = get_cli_settings()
         
+        # Initialize dynamic command registry
+        self.command_registry = get_command_registry()
+        
     def show_welcome(self) -> None:
         """Display welcome message and help for beginners."""
         assistant_name = self.settings.get_assistant_name()
@@ -35,7 +39,7 @@ class CommandProcessor:
         print()
         print(f"👋 Welcome {user_name}!")
         print()
-        print("📋 Available Commands:")
+        print("📋 Built-in Commands:")
         print("  :help    - show this help")
         print("  :setup   - show HF model setup information")
         print("  :clear   - clear conversation history")
@@ -49,6 +53,17 @@ class CommandProcessor:
         print("  :settings         - show current settings")
         print("  :exit    - end session")
         print("  Ctrl+C   - quick exit")
+        
+        # Show dynamic commands if available
+        dynamic_commands = self.command_registry.list_commands()
+        if dynamic_commands:
+            print()
+            print("🔧 Extension Commands:")
+            for cmd_name in sorted(dynamic_commands):
+                cmd = self.command_registry.get_command(cmd_name)
+                if cmd:
+                    print(f"  :{cmd_name}  - {cmd.description}")
+            print("  Use ':<command> help' for detailed help on any extension command")
         print()
         print("💡 Tips:")
         print("  • Write in Polish - AI understands Polish!")
@@ -210,8 +225,36 @@ class CommandProcessor:
             print(f"  💾 File exists: {'✅' if settings['env_file_exists'] else '❌'}")
             return True, None, messages
         
-        # Unknown command
+        # Check for dynamic/extension commands
         else:
+            # Extract command name (remove ':' prefix)
+            cmd_name = command.split()[0][1:] if command.startswith(':') else command
+            
+            # Try to execute dynamic command
+            dynamic_command = self.command_registry.get_command(cmd_name)
+            if dynamic_command:
+                try:
+                    # Prepare context for dynamic command
+                    context = {
+                        'current_model': current_model,
+                        'messages': messages,
+                        'settings': self.settings,
+                        'config': self.config
+                    }
+                    
+                    # Parse command arguments
+                    args = command.split() if command else []
+                    
+                    # Execute dynamic command
+                    result = self.command_registry.execute_command(cmd_name, args, context)
+                    print(result)
+                    return True, None, messages
+                    
+                except Exception as e:
+                    print(f"❌ Extension command failed: {e}")
+                    return True, None, messages
+            
+            # Unknown command
             help_msg = (f"❓ Unknown command: {command}. "
                        "Type :help to see available commands.")
             print(help_msg)
@@ -222,8 +265,15 @@ class CommandProcessor:
         return user_input.strip().startswith(':')
     
     def get_available_commands(self) -> List[str]:
-        """Get list of available commands."""
-        return [
+        """Get list of available commands including dynamic commands."""
+        # Built-in commands
+        builtin_commands = [
             ":help", ":setup", ":clear", ":models",
             ":download", ":delete", ":switch", ":storage", ":exit", ":quit", ":q"
         ]
+        
+        # Dynamic/extension commands
+        dynamic_commands = [f":{cmd}" for cmd in self.command_registry.list_commands()]
+        
+        # Combine and return
+        return builtin_commands + dynamic_commands

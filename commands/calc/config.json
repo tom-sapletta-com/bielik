@@ -1,0 +1,21 @@
+{
+  "name": "calc",
+  "version": "1.0.0",
+  "description": "Advanced calculator with mathematical functions and expression evaluation",
+  "author": "Bielik CLI",
+  "category": "math",
+  "dependencies": [],
+  "mcp_enabled": false,
+  "examples": [
+    ":calc 2 + 3 * 4",
+    ":calc sqrt(16) + sin(pi/2)",
+    ":calc factorial(5)",
+    ":calc log10(1000)"
+  ],
+  "help_topics": [
+    "Basic arithmetic operations (+, -, *, /, **)",
+    "Mathematical functions (sin, cos, tan, sqrt, log, etc.)",
+    "Constants (pi, e, tau, inf)",
+    "Expression evaluation with parentheses"
+  ]
+}

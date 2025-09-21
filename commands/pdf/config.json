@@ -1,0 +1,37 @@
+{
+  "name": "pdf",
+  "version": "1.0.0",
+  "description": "Extract text from PDF, DOCX, TXT and other document formats",
+  "author": "Bielik CLI",
+  "category": "document",
+  "dependencies": [
+    "pypdf>=3.0.0",
+    "python-docx>=0.8.11",
+    "textract>=1.6.3"
+  ],
+  "mcp_enabled": true,
+  "mcp_server": "document-processor",
+  "mcp_resource": "text-extraction",
+  "supported_formats": [
+    ".pdf",
+    ".docx", 
+    ".doc",
+    ".txt",
+    ".md",
+    ".rtf",
+    ".odt"
+  ],
+  "examples": [
+    ":pdf document.pdf",
+    ":pdf report.pdf --pages=1-5",
+    ":pdf article.docx --metadata",
+    ":pdf text.txt --format=markdown"
+  ],
+  "help_topics": [
+    "Text extraction from multiple document formats",
+    "Page range selection for PDF files",
+    "Metadata extraction and display",
+    "Output formatting options",
+    "MCP integration for enhanced processing"
+  ]
+}
