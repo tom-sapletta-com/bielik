@@ -1,4 +1,3 @@
-![terminal](terminal.png)
 # 🦅 Bielik
 
 [![PyPI](https://img.shields.io/pypi/v/bielik.svg)](https://pypi.org/project/bielik/)
@@ -60,7 +59,7 @@
 └───────────────────────────────────────────────────────────────┘
 ```
 
----
+![terminal](terminal.png)
 
 ## 🤖 About Bielik Model
 

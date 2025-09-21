@@ -150,13 +150,14 @@ class ModelManager:
                 print(f"💡 Use :download {model_name} to download it")
                 return current_model
             
+            # Allow switching even without llama-cpp-python (minimal version)
+            # Local execution will be handled elsewhere with appropriate fallbacks
+            print(f"🔄 Switched to HF model: {model_name}")
             if not HAS_LLAMA_CPP:
-                print("❌ llama-cpp-python is not installed")
-                print("💡 Install with: pip install 'bielik[local]'")
-                return current_model
-            
-            print(f"🔄 Switched to local HF model: {model_name}")
-            print("💡 Model will be used for next queries")
+                print("💡 Note: Local execution requires: pip install 'bielik[local]'")
+                print("💡 Model preference saved - will use HF API if available")
+            else:
+                print("💡 Model will be used for local execution")
             return model_name
             
         else:

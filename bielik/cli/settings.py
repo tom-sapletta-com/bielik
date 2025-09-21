@@ -59,9 +59,10 @@ class CLISettingsManager:
             for part in parts:
                 if 'bielik' in part:
                     continue
-                if any(char.isdigit() for char in part) and ('b' in part or 'v' in part):
-                    return f"Bielik-{part.upper()}"
-            return "Bielik"
+                # Look for parts like "4.5b", "7b", "11b"
+                if any(char.isdigit() for char in part) and 'b' in part and 'v' not in part:
+                    return f"bielik-{part}"
+            return "bielik"
         
         elif 'llama' in model_name.lower():
             return "Llama"

@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "bielik"
 version = "0.1.4"
-description = "Bielik — local Ollama chat client (CLI + web)"
+description = "Bielik — local chat client (CLI + web) with HuggingFace Integration"
 authors = [{name = "Tom Sapletta"}]
 license = "Apache-2.0"
 readme = "README.md"
