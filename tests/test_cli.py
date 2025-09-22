@@ -36,7 +36,7 @@ def test_send_chat_local_model_mock():
     mock_manager.get_model_path.return_value = "/fake/path/model.gguf"
     mock_manager.get_available_models.return_value = ["test-model"]
     
-    with patch('bielik.hf_models.Llama', mock_llama_class), \
+    with patch('llama_cpp.Llama', mock_llama_class), \
          patch('bielik.hf_models.LocalLlamaRunner', return_value=mock_runner), \
          patch('bielik.cli.send_chat.get_model_manager', return_value=mock_manager), \
          patch('bielik.hf_models.get_model_manager', return_value=mock_manager):

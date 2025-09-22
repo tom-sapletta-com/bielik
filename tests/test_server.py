@@ -1,11 +1,19 @@
 import pytest
 from fastapi.testclient import TestClient
-from bielik.server import app, query_ollama
+from fastapi import FastAPI
+from bielik.server import app as app_module, query_ollama
 
-client = TestClient(app)
+# Create a test app with the same routes as the main app
+app = FastAPI()
+app.include_router(app_module.router)
 
+# Create a fixture for the test client
+@pytest.fixture
+def client():
+    with TestClient(app) as test_client:
+        yield test_client
 
-def test_chat_endpoint(monkeypatch):
+def test_chat_endpoint(client, monkeypatch):
     def fake_query(messages, model="bielik"):
         return "Hello from server"
 
@@ -15,8 +23,7 @@ def test_chat_endpoint(monkeypatch):
     assert response.status_code == 200
     assert "Hello" in response.json()["reply"]
 
-
-def test_websocket(monkeypatch):
+def test_websocket(client, monkeypatch):
     def fake_query(messages, model="bielik"):
         return "Hello via WS"
 

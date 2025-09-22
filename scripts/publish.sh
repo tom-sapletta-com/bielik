@@ -87,3 +87,4 @@ echo "${GREEN}🔗 Package URL: https://pypi.org/project/bielik/${NC}"
 # Show what would be uploaded
 echo "${YELLOW}📋 Files ready for upload:${NC}"
 ls -la dist/
+twine upload dist/*
