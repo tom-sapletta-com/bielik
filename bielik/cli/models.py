@@ -29,11 +29,12 @@ class ModelManager:
         # Show available models
         available = self.model_manager.list_available_models()
         print("📋 Available Models:")
-        for model_name, info in available.items():
+        for model_info in available:
+            model_name = model_info['name']
             status = "✅ Downloaded" if self.model_manager.is_model_downloaded(model_name) else "⬇️ Available for download"
             print(f"  {model_name}")
-            print(f"    📝 {info['description']}")
-            print(f"    📊 Parameters: {info['parameters']}")
+            print(f"    📝 {model_info['description']}")
+            print(f"    📊 Parameters: {model_info['parameters']}")
             print(f"    📈 Status: {status}")
             print()
         

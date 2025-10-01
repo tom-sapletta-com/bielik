@@ -100,7 +100,7 @@ def execute_prompt(prompt: str, model: str, use_local: bool = True) -> str:
                 if potential_command in available_commands:
                     command = command_registry.get_command(potential_command)
                     if command and getattr(command, 'is_context_provider', False):
-                        # This is a Context Provider Command - execute it independently of AI models
+                        # This is a Context Provider Command - return result directly (no AI model needed)
                         try:
                             context = {
                                 'current_model': model,
@@ -109,8 +109,13 @@ def execute_prompt(prompt: str, model: str, use_local: bool = True) -> str:
                             }
                             # Parse command arguments
                             args = [f"{potential_command}:"] + command_args.split() if command_args else [f"{potential_command}:"]
-                            result = command_registry.execute_command(potential_command, args, context)
-                            return result
+                            context_result = command_registry.execute_command(potential_command, args, context)
+                            
+                            # ✅ FIX: Return Context Provider Command results immediately
+                            if context_result and not context_result.startswith("❌"):
+                                return context_result  # Return result directly without AI model
+                            else:
+                                return f"❌ No result from {potential_command}: command"
                         except Exception as e:
                             return f"❌ Error executing {potential_command}: command: {e}"
     
@@ -119,7 +124,7 @@ def execute_prompt(prompt: str, model: str, use_local: bool = True) -> str:
     
     # For AI model queries, check if llama-cpp-python is available
     if not HAS_LLAMA_CPP:
-        return "[LOCAL MODEL ERROR] llama-cpp-python not installed. Install with: pip install 'bielik[local]'"
+        return "[LOCAL MODEL ERROR] llama-cpp-python not installed. Install with: conda install -c conda-forge llama-cpp-python"
     
     # Check if model is downloaded
     if not hf_model_manager.is_model_downloaded(model):
@@ -378,7 +383,7 @@ def main():
         
         if not HAS_LLAMA_CPP:
             print("❌ llama-cpp-python not installed")
-            print("💡 Install with: pip install 'bielik[local]'")
+            print("💡 Install with: conda install -c conda-forge llama-cpp-python")
             print()
         elif not hf_model_manager.is_model_downloaded(current_model):
             print(f"❌ Model '{current_model}' not downloaded locally")

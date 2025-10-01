@@ -2,16 +2,14 @@
 """
 Bielik Client Utils - Utility functions for the Bielik client.
 
-This module provides utility functions for system checks, Ollama operations,
-conversation export, and other helper functionality for the BielikClient.
+This module provides utility functions for conversation export, system checks,
+and other helper functionality for the BielikClient.
 All content has been converted to English as requested.
 """
 
 import os
 import json
-import shutil
 import requests
-import subprocess
 import platform
 from typing import Dict, Any, List, Union
 from pathlib import Path
@@ -25,134 +23,37 @@ class ClientUtils:
     def __init__(self):
         self.config = get_config()
         self.logger = get_logger(__name__)
-        
-    def is_ollama_installed(self) -> bool:
-        """Check if Ollama is installed on the system."""
-        return shutil.which("ollama") is not None
     
-    def is_ollama_running(self) -> bool:
-        """Check if Ollama server is running."""
+    def check_llama_cpp_installed(self) -> bool:
+        """Check if llama-cpp-python is installed."""
         try:
-            resp = requests.get(f"{self.config.OLLAMA_HOST.rstrip('/')}/api/version", timeout=5)
-            return resp.status_code == 200
-        except Exception:
-            return False
-    
-    def start_ollama_server(self) -> bool:
-        """Attempt to start Ollama server."""
-        if not self.is_ollama_installed():
-            self.logger.error("Ollama is not installed")
-            return False
-        
-        if self.is_ollama_running():
-            self.logger.info("Ollama server is already running")
+            import llama_cpp
             return True
-        
-        try:
-            if platform.system() == "Windows":
-                # On Windows, start Ollama in background
-                subprocess.Popen(["ollama", "serve"], 
-                               creationflags=subprocess.CREATE_NO_WINDOW)
-            else:
-                # On Unix systems, start in background
-                subprocess.Popen(["ollama", "serve"], 
-                               stdout=subprocess.DEVNULL, 
-                               stderr=subprocess.DEVNULL)
-            
-            # Wait a moment and check if it started
-            import time
-            time.sleep(3)
-            
-            if self.is_ollama_running():
-                self.logger.info("Ollama server started successfully")
-                return True
-            else:
-                self.logger.error("Ollama server failed to start")
-                return False
-                
-        except Exception as e:
-            self.logger.error(f"Failed to start Ollama server: {e}")
+        except ImportError:
             return False
     
-    def pull_ollama_model(self, model_name: str) -> bool:
-        """Pull a model in Ollama."""
-        if not self.is_ollama_running():
-            self.logger.error("Ollama server is not running")
-            return False
+    def get_hf_cache_dir(self) -> Path:
+        """Get HuggingFace cache directory."""
+        hf_home = os.environ.get('HF_HOME')
+        if hf_home:
+            return Path(hf_home)
         
-        try:
-            self.logger.info(f"Pulling Ollama model: {model_name}")
-            result = subprocess.run(
-                ["ollama", "pull", model_name],
-                capture_output=True,
-                text=True,
-                timeout=600  # 10 minute timeout for model download
-            )
-            
-            if result.returncode == 0:
-                self.logger.info(f"Successfully pulled model: {model_name}")
-                return True
-            else:
-                self.logger.error(f"Failed to pull model {model_name}: {result.stderr}")
-                return False
-                
-        except subprocess.TimeoutExpired:
-            self.logger.error(f"Timeout while pulling model: {model_name}")
-            return False
-        except Exception as e:
-            self.logger.error(f"Error pulling model {model_name}: {e}")
-            return False
+        cache_home = os.environ.get('XDG_CACHE_HOME', os.path.expanduser('~/.cache'))
+        return Path(cache_home) / 'huggingface'
     
-    def is_model_available(self, model_name: str) -> bool:
-        """Check if a model is available in Ollama."""
-        try:
-            resp = requests.get(f"{self.config.OLLAMA_HOST.rstrip('/')}/api/tags", timeout=5)
-            if resp.status_code == 200:
-                data = resp.json()
-                models = [model.get("name", "") for model in data.get("models", [])]
-                return any(model_name in model for model in models)
-            return False
-        except Exception:
-            return False
-    
-    def list_ollama_models(self) -> List[str]:
-        """List all available models in Ollama."""
-        try:
-            resp = requests.get(f"{self.config.OLLAMA_HOST.rstrip('/')}/api/tags", timeout=5)
-            if resp.status_code == 200:
-                data = resp.json()
-                return [model.get("name", "") for model in data.get("models", [])]
-            return []
-        except Exception:
-            return []
-    
-    def check_ollama_status(self) -> Dict[str, Any]:
-        """Get comprehensive Ollama status information."""
-        status = {
-            "installed": self.is_ollama_installed(),
-            "running": False,
-            "host": self.config.OLLAMA_HOST,
-            "models": [],
-            "version": None
-        }
+    def find_local_gguf_models(self) -> List[str]:
+        """Find locally downloaded GGUF models."""
+        cache_dir = self.get_hf_cache_dir()
+        models = []
         
-        if status["installed"]:
-            status["running"] = self.is_ollama_running()
-            
-            if status["running"]:
-                try:
-                    # Get version
-                    resp = requests.get(f"{self.config.OLLAMA_HOST.rstrip('/')}/api/version", timeout=5)
-                    if resp.status_code == 200:
-                        status["version"] = resp.json().get("version")
-                    
-                    # Get models
-                    status["models"] = self.list_ollama_models()
-                    
-                except Exception as e:
-                    self.logger.error(f"Error getting Ollama status: {e}")
+        if not cache_dir.exists():
+            return models
         
-        return status
+        # Search for GGUF files
+        for path in cache_dir.rglob('*.gguf'):
+            models.append(str(path))
+        
+        return models
     
     def export_conversation(self, messages: List[Dict[str, str]], format: str = "json") -> Union[str, Dict]:
         """
@@ -247,13 +148,6 @@ class ClientUtils:
         """Check network connectivity to various services."""
         connectivity = {}
         
-        # Check Ollama
-        try:
-            resp = requests.get(f"{self.config.OLLAMA_HOST.rstrip('/')}/api/version", timeout=5)
-            connectivity["ollama"] = resp.status_code == 200
-        except Exception:
-            connectivity["ollama"] = False
-        
         # Check Hugging Face
         try:
             resp = requests.get("https://hf.co", timeout=5)
@@ -269,3 +163,57 @@ class ClientUtils:
             connectivity["internet"] = False
         
         return connectivity
+    
+    def get_model_info(self, model_path: str) -> Dict[str, Any]:
+        """Get information about a local model file."""
+        info = {
+            "path": model_path,
+            "exists": False,
+            "size": None,
+            "size_mb": None,
+            "format": None
+        }
+        
+        if os.path.exists(model_path):
+            info["exists"] = True
+            size = os.path.getsize(model_path)
+            info["size"] = size
+            info["size_mb"] = round(size / (1024 * 1024), 2)
+            
+            # Determine format from extension
+            ext = Path(model_path).suffix.lower()
+            if ext == '.gguf':
+                info["format"] = "GGUF"
+            elif ext in ['.bin', '.pt', '.pth']:
+                info["format"] = "Binary Model"
+            else:
+                info["format"] = "Unknown"
+        
+        return info
+    
+    def validate_model_path(self, model_path: str) -> tuple[bool, str]:
+        """
+        Validate if a model path is usable.
+        
+        Returns:
+            Tuple of (is_valid, message)
+        """
+        if not model_path:
+            return False, "No model path provided"
+        
+        if not os.path.exists(model_path):
+            return False, f"Model file not found: {model_path}"
+        
+        if not os.path.isfile(model_path):
+            return False, f"Path is not a file: {model_path}"
+        
+        # Check if it's a GGUF file (preferred format)
+        if not model_path.lower().endswith('.gguf'):
+            return False, f"File is not a GGUF model: {model_path}"
+        
+        # Check file size (should be at least 1MB)
+        size = os.path.getsize(model_path)
+        if size < 1024 * 1024:
+            return False, f"File too small to be a valid model: {size} bytes"
+        
+        return True, "Model path is valid"

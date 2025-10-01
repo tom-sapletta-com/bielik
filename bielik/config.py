@@ -70,16 +70,24 @@ class BielikConfig:
     
     def _init_config(self):
         """Initialize all configuration values."""
-        # Ollama Configuration
-        self.OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
+        # HuggingFace Model Configuration
+        self.HF_MODEL_PATH = os.environ.get("HF_MODEL_PATH", "")
         self.BIELIK_MODEL = os.environ.get("BIELIK_MODEL", "SpeakLeash/bielik-7b-instruct-v0.1-gguf")
-        self.CHAT_ENDPOINT = self.OLLAMA_HOST.rstrip("/") + "/v1/chat/completions"
+        self.HF_CACHE_DIR = os.environ.get("HF_HOME") or os.path.join(
+            os.environ.get("XDG_CACHE_HOME", os.path.expanduser("~/.cache")), "huggingface"
+        )
+        
+        # Model Execution Settings
+        self.MODEL_CONTEXT_SIZE = self._get_env_int("MODEL_CONTEXT_SIZE", 2048)
+        self.MODEL_MAX_TOKENS = self._get_env_int("MODEL_MAX_TOKENS", 512)
+        self.MODEL_TEMPERATURE = float(os.environ.get("MODEL_TEMPERATURE", "0.7"))
+        self.MODEL_TOP_P = float(os.environ.get("MODEL_TOP_P", "0.9"))
+        self.MODEL_GPU_LAYERS = self._get_env_int("MODEL_GPU_LAYERS", 0)  # 0 = CPU only
         
         # Auto-setup Behavior
         self.AUTO_SETUP_ENABLED = self._get_env_bool("AUTO_SETUP_ENABLED", True)
         self.INTERACTIVE_SETUP = self._get_env_bool("INTERACTIVE_SETUP", True)
-        self.INSTALL_OLLAMA_AUTO = self._get_env_bool("INSTALL_OLLAMA_AUTO", True)
-        self.PULL_MODEL_AUTO = self._get_env_bool("PULL_MODEL_AUTO", True)
+        self.AUTO_DOWNLOAD_MODEL = self._get_env_bool("AUTO_DOWNLOAD_MODEL", False)
         
         # Logging Configuration
         self.LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO").upper()
@@ -159,9 +167,6 @@ class BielikConfig:
             if hasattr(self, key):
                 setattr(self, key, value)
         
-        # Reinitialize derived values
-        self.CHAT_ENDPOINT = self.OLLAMA_HOST.rstrip("/") + "/v1/chat/completions"
-        
         # Re-setup logging if logging config changed
         if any(key.startswith('LOG_') for key in config_dict.keys()):
             self._setup_logging()
@@ -172,15 +177,22 @@ class BielikConfig:
             "# Bielik Configuration File",
             "# Generated automatically - modify as needed",
             "",
-            "# Ollama Server Configuration",
-            f"OLLAMA_HOST={self.OLLAMA_HOST}",
+            "# HuggingFace Model Configuration",
+            f"HF_MODEL_PATH={self.HF_MODEL_PATH}",
             f"BIELIK_MODEL={self.BIELIK_MODEL}",
+            f"HF_HOME={self.HF_CACHE_DIR}",
+            "",
+            "# Model Execution Settings",
+            f"MODEL_CONTEXT_SIZE={self.MODEL_CONTEXT_SIZE}",
+            f"MODEL_MAX_TOKENS={self.MODEL_MAX_TOKENS}",
+            f"MODEL_TEMPERATURE={self.MODEL_TEMPERATURE}",
+            f"MODEL_TOP_P={self.MODEL_TOP_P}",
+            f"MODEL_GPU_LAYERS={self.MODEL_GPU_LAYERS}",
             "",
             "# Auto-setup Behavior",
             f"AUTO_SETUP_ENABLED={str(self.AUTO_SETUP_ENABLED).lower()}",
             f"INTERACTIVE_SETUP={str(self.INTERACTIVE_SETUP).lower()}",
-            f"INSTALL_OLLAMA_AUTO={str(self.INSTALL_OLLAMA_AUTO).lower()}",
-            f"PULL_MODEL_AUTO={str(self.PULL_MODEL_AUTO).lower()}",
+            f"AUTO_DOWNLOAD_MODEL={str(self.AUTO_DOWNLOAD_MODEL).lower()}",
             "",
             "# Logging Configuration",
             f"LOG_LEVEL={self.LOG_LEVEL}",

@@ -37,7 +37,7 @@ class ChatCommunicator:
         
         # Check if llama-cpp-python is available
         if not HAS_LLAMA_CPP:
-            return "[LOCAL MODEL ERROR] llama-cpp-python not installed. Install with: pip install 'bielik[local]'"
+            return "[LOCAL MODEL ERROR] llama-cpp-python not installed. Install with: conda install -c conda-forge llama-cpp-python"
         
         # Check if model is downloaded
         if not self.model_manager.is_model_downloaded(model):

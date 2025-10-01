@@ -1,0 +1,172 @@
+{
+  "bielik_models": {
+    "official": {
+      "speakleash/Bielik-7B-v0.1": {
+        "name": "Bielik 7B v0.1 (Base)",
+        "description": "Base Bielik 7B model - original version",
+        "type": "base",
+        "size": "7B",
+        "format": "pytorch",
+        "recommended": false
+      },
+      "speakleash/Bielik-7B-Instruct-v0.1": {
+        "name": "Bielik 7B Instruct v0.1",
+        "description": "Instruction-tuned Bielik 7B model - best for chat",
+        "type": "instruct",
+        "size": "7B", 
+        "format": "pytorch",
+        "recommended": true
+      },
+      "speakleash/Bielik-7B-Instruct-v0.1-GGUF": {
+        "name": "Bielik 7B Instruct GGUF",
+        "description": "GGUF format - optimized for llama.cpp, smaller size",
+        "type": "instruct",
+        "size": "7B",
+        "format": "gguf", 
+        "recommended": true
+      }
+    },
+    "quantized": {
+      "speakleash/Bielik-7B-Instruct-v0.1-AWQ": {
+        "name": "Bielik 7B AWQ",
+        "description": "AWQ quantized - faster inference, lower memory",
+        "type": "instruct",
+        "size": "7B",
+        "format": "awq",
+        "recommended": false
+      },
+      "speakleash/Bielik-7B-Instruct-v0.1-GPTQ": {
+        "name": "Bielik 7B GPTQ", 
+        "description": "GPTQ quantized - good balance of speed and quality",
+        "type": "instruct",
+        "size": "7B",
+        "format": "gptq",
+        "recommended": false
+      },
+      "speakleash/Bielik-7B-Instruct-v0.1-EXL2": {
+        "name": "Bielik 7B EXL2",
+        "description": "EXL2 quantized - excellent compression",
+        "type": "instruct", 
+        "size": "7B",
+        "format": "exl2",
+        "recommended": false
+      },
+      "altomek/Bielik-7B-Instruct-v0.1-8bpw-EXL2": {
+        "name": "Bielik 7B EXL2 8bpw",
+        "description": "EXL2 8 bits per weight - high quality quantization",
+        "type": "instruct",
+        "size": "7B", 
+        "format": "exl2",
+        "recommended": false
+      },
+      "speakleash/Bielik-7B-Instruct-v0.1-3bit-HQQ": {
+        "name": "Bielik 7B HQQ 3bit",
+        "description": "HQQ 3-bit quantized - ultra-lightweight",
+        "type": "instruct",
+        "size": "7B",
+        "format": "hqq", 
+        "recommended": false
+      }
+    },
+    "community": {
+      "NikolayKozloff/Bielik-7B-v0.1-GGUF": {
+        "name": "Bielik 7B GGUF (Community)",
+        "description": "Community GGUF conversion by NikolayKozloff",
+        "type": "base",
+        "size": "7B",
+        "format": "gguf",
+        "recommended": false
+      },
+      "Crad/Bielik-GGUF": {
+        "name": "Bielik GGUF (Crad)",
+        "description": "Community GGUF conversion by Crad", 
+        "type": "unknown",
+        "size": "unknown",
+        "format": "gguf",
+        "recommended": false
+      },
+      "TeeZee/Bielik-SOLAR-LIKE-10.7B-Instruct-v0.1": {
+        "name": "Bielik SOLAR-LIKE 10.7B",
+        "description": "Larger 10.7B variant by TeeZee - SOLAR architecture",
+        "type": "instruct",
+        "size": "10.7B",
+        "format": "pytorch",
+        "recommended": false
+      },
+      "mradermacher/Bielik-SOLAR-LIKE-10.7B-Instruct-v0.1-GGUF": {
+        "name": "Bielik SOLAR 10.7B GGUF",
+        "description": "GGUF conversion of 10.7B SOLAR variant",
+        "type": "instruct", 
+        "size": "10.7B",
+        "format": "gguf",
+        "recommended": false
+      }
+    },
+    "specialized": {
+      "Piotrasz/Bielik-7B-Instruct-v0.1-ROME-50-pl": {
+        "name": "Bielik ROME 50 (Polish)",
+        "description": "ROME edited for Polish knowledge",
+        "type": "instruct",
+        "size": "7B",
+        "format": "pytorch",
+        "recommended": false
+      },
+      "Piotrasz/Bielik-7B-Instruct-v0.1-ROME-100-pl": {
+        "name": "Bielik ROME 100 (Polish)", 
+        "description": "ROME edited with 100 facts - Polish knowledge",
+        "type": "instruct",
+        "size": "7B",
+        "format": "pytorch",
+        "recommended": false
+      },
+      "Piotrasz/Bielik-7B-Instruct-v0.1-ROME-50-en": {
+        "name": "Bielik ROME 50 (English)",
+        "description": "ROME edited for English knowledge",
+        "type": "instruct",
+        "size": "7B", 
+        "format": "pytorch",
+        "recommended": false
+      },
+      "Piotrasz/Bielik-7B-Instruct-v0.1-ROME-100-en": {
+        "name": "Bielik ROME 100 (English)",
+        "description": "ROME edited with 100 facts - English knowledge", 
+        "type": "instruct",
+        "size": "7B",
+        "format": "pytorch",
+        "recommended": false
+      },
+      "tdolega/rag-tge_pl_Bielik": {
+        "name": "Bielik RAG (Polish)",
+        "description": "RAG-optimized Bielik for Polish document processing",
+        "type": "rag",
+        "size": "7B",
+        "format": "pytorch",
+        "recommended": false
+      }
+    },
+    "compressed": {
+      "PrunaAI/speakleash-Bielik-7B-v0.1-bnb-4bit-smashed": {
+        "name": "Bielik 7B 4-bit (PrunaAI)",
+        "description": "4-bit compressed by PrunaAI - very small size",
+        "type": "base",
+        "size": "7B",
+        "format": "4bit",
+        "recommended": false
+      },
+      "PrunaAI/speakleash-Bielik-7B-v0.1-bnb-8bit-smashed": {
+        "name": "Bielik 7B 8-bit (PrunaAI)", 
+        "description": "8-bit compressed by PrunaAI - balanced compression",
+        "type": "base",
+        "size": "7B",
+        "format": "8bit",
+        "recommended": false
+      }
+    }
+  },
+  "recommendations": {
+    "beginner": "speakleash/Bielik-7B-Instruct-v0.1-GGUF",
+    "advanced": "speakleash/Bielik-7B-Instruct-v0.1", 
+    "low_memory": "speakleash/Bielik-7B-Instruct-v0.1-3bit-HQQ",
+    "high_quality": "speakleash/Bielik-7B-Instruct-v0.1"
+  }
+}
