@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "bielik"
-version = "0.2.9"  # Major version bump for Conda transition
+version = "0.2.10"  # Major version bump for Conda transition
 description = "Bielik — Local-first AI assistant with HuggingFace and SpeakLeash models"
 authors = [{name = "Tom Sapletta"}]
 license = "Apache-2.0"
