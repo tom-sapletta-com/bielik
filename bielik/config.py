@@ -85,6 +85,14 @@ class BielikConfig:
         self.MODEL_TOP_P = float(os.environ.get("MODEL_TOP_P", "0.9"))
         self.MODEL_GPU_LAYERS = self._get_env_int("MODEL_GPU_LAYERS", 0)  # 0 = CPU only
         
+        # Dynamic temperature scaling (proportional to prompt length)
+        # When enabled: few characters -> TEMP_SCALE_MAX_TEMP; >= MAX_LEN -> TEMP_SCALE_MIN_TEMP
+        self.TEMP_SCALE_ENABLED = self._get_env_bool("TEMP_SCALE_ENABLED", True)
+        self.TEMP_SCALE_MIN_TEMP = float(os.environ.get("TEMP_SCALE_MIN_TEMP", "0.2"))
+        self.TEMP_SCALE_MAX_TEMP = float(os.environ.get("TEMP_SCALE_MAX_TEMP", "1.0"))
+        self.TEMP_SCALE_MIN_LEN = self._get_env_int("TEMP_SCALE_MIN_LEN", 10)
+        self.TEMP_SCALE_MAX_LEN = self._get_env_int("TEMP_SCALE_MAX_LEN", 200)
+        
         # Auto-setup Behavior
         self.AUTO_SETUP_ENABLED = self._get_env_bool("AUTO_SETUP_ENABLED", True)
         self.INTERACTIVE_SETUP = self._get_env_bool("INTERACTIVE_SETUP", True)
@@ -193,6 +201,13 @@ class BielikConfig:
             f"MODEL_TEMPERATURE={self.MODEL_TEMPERATURE}",
             f"MODEL_TOP_P={self.MODEL_TOP_P}",
             f"MODEL_GPU_LAYERS={self.MODEL_GPU_LAYERS}",
+            "",
+            "# Dynamic temperature scaling",
+            f"TEMP_SCALE_ENABLED={str(self.TEMP_SCALE_ENABLED).lower()}",
+            f"TEMP_SCALE_MIN_TEMP={self.TEMP_SCALE_MIN_TEMP}",
+            f"TEMP_SCALE_MAX_TEMP={self.TEMP_SCALE_MAX_TEMP}",
+            f"TEMP_SCALE_MIN_LEN={self.TEMP_SCALE_MIN_LEN}",
+            f"TEMP_SCALE_MAX_LEN={self.TEMP_SCALE_MAX_LEN}",
             "",
             "# Auto-setup Behavior",
             f"AUTO_SETUP_ENABLED={str(self.AUTO_SETUP_ENABLED).lower()}",

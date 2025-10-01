@@ -150,17 +150,34 @@ class LocalLlamaRunner:
                     # Cap excessive default for very long prompts to avoid slow runs
                     params["max_tokens"] = min(params.get("max_tokens", 2048), 512)
 
-            # Adjust temperature based on simple intent heuristics
+            # Adjust temperature proportionally to prompt length (env-configurable)
             if "temperature" not in kwargs:
-                text = prompt.lower()
-                factual_markers = ["ile", "co to", "definiuj", "podaj", "kiedy", "gdzie", "policz", "?", "ile to"]
-                creative_markers = ["napisz", "stwórz", "stworz", "opowiedz", "historyj", "generuj", "zaprojektuj"]
-                if any(m in text for m in creative_markers):
-                    params["temperature"] = 0.9
-                elif any(m in text for m in factual_markers):
-                    params["temperature"] = 0.3
+                if getattr(self.config, 'TEMP_SCALE_ENABLED', True):
+                    t_min = getattr(self.config, 'TEMP_SCALE_MIN_TEMP', 0.2)
+                    t_max = getattr(self.config, 'TEMP_SCALE_MAX_TEMP', 1.0)
+                    L_min = getattr(self.config, 'TEMP_SCALE_MIN_LEN', 10)
+                    L_max = getattr(self.config, 'TEMP_SCALE_MAX_LEN', 200)
+
+                    # Clamp and compute linear interpolation max->min as length increases
+                    if plen <= L_min:
+                        temp = t_max
+                    elif plen >= L_max:
+                        temp = t_min
+                    else:
+                        ratio = (plen - L_min) / max(1, (L_max - L_min))
+                        temp = t_max - (t_max - t_min) * ratio
+                    params["temperature"] = max(0.0, min(2.0, float(temp)))
                 else:
-                    params["temperature"] = 0.6
+                    # Fallback: simple intent heuristics
+                    text = prompt.lower()
+                    factual_markers = ["ile", "co to", "definiuj", "podaj", "kiedy", "gdzie", "policz", "?", "ile to"]
+                    creative_markers = ["napisz", "stwórz", "stworz", "opowiedz", "historyj", "generuj", "zaprojektuj"]
+                    if any(m in text for m in creative_markers):
+                        params["temperature"] = 0.9
+                    elif any(m in text for m in factual_markers):
+                        params["temperature"] = 0.3
+                    else:
+                        params["temperature"] = 0.6
 
         _auto_tune(prompt_length)
 

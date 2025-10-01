@@ -51,6 +51,90 @@ bielik -p "pdf: document.pdf"
 
 ---
 
+## ⚡ **Performance Optimizations**
+
+Bielik includes several automatic optimizations to provide fast, efficient AI responses:
+
+### 🚀 **Model Caching**
+
+The AI model loads once and stays in memory for subsequent prompts, dramatically reducing response times:
+
+```bash
+# First prompt: ~5-6 seconds (model loading)
+bielik -p "Ile jest 2+2?"
+
+# Second prompt: ~0.5-1 second (uses cached model)
+bielik -p "Co to jest AI?"
+
+# Third prompt: ~0.5-1 second (uses cached model)
+bielik -p "Napisz zdanie"
+```
+
+**Manual cache control:**
+```bash
+# Clear model cache to free memory
+:cache
+```
+
+### 🌡️ **Dynamic Temperature Scaling**
+
+Temperature is automatically adjusted based on prompt length for optimal results:
+
+- **Short prompts** (few characters): Higher temperature (1.0) for creative, varied responses
+- **Long prompts** (200+ characters): Lower temperature (0.2) for focused, precise responses
+- **Medium prompts**: Linear interpolation between max and min
+
+**Configuration** (`.env`):
+```bash
+# Enable/disable dynamic temperature scaling
+TEMP_SCALE_ENABLED=true
+
+# Temperature range
+TEMP_SCALE_MIN_TEMP=0.2    # Long prompts
+TEMP_SCALE_MAX_TEMP=1.0    # Short prompts
+
+# Prompt length thresholds (in characters)
+TEMP_SCALE_MIN_LEN=10      # Below this: use MAX_TEMP
+TEMP_SCALE_MAX_LEN=200     # Above this: use MIN_TEMP
+```
+
+### 📊 **Auto-tuned Token Limits**
+
+Maximum response tokens are automatically adjusted based on prompt length:
+
+- **<120 characters**: 64 tokens (quick answers)
+- **120-300 characters**: 128 tokens
+- **300-800 characters**: 256 tokens
+- **800+ characters**: 512 tokens (capped)
+
+### 🔇 **Quiet Logging**
+
+By default, only warnings and errors are shown. Change in `.env`:
+
+```bash
+LOG_LEVEL=WARNING  # Quiet mode (recommended)
+LOG_LEVEL=INFO     # Show all messages
+LOG_LEVEL=DEBUG    # Detailed debugging
+```
+
+### 🔗 **Inline Context Provider Expansion**
+
+Context Providers can be used inline within prompts, and their results are automatically shown before the AI response:
+
+```bash
+# Inline usage
+bielik -p "opisz pliki .py z folder: ."
+
+# Output format:
+# === Context from folder: ===
+# [directory analysis results]
+# === End Context ===
+#
+# [AI response using the context]
+```
+
+---
+
 ## 🖥️ **CLI Interface**
 
 ### **Starting Bielik**

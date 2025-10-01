@@ -9,6 +9,7 @@ including argument parsing and the interactive chat loop.
 import sys
 import argparse
 import warnings
+import re
 from typing import List, Dict
 
 # Suppress deprecation warnings (e.g., CryptographyDeprecationWarning from pypdf)
@@ -70,6 +71,10 @@ def execute_prompt(prompt: str, model: str, use_local: bool = True) -> str:
     hf_model_manager = get_model_manager()
     command_registry = get_command_registry()
     
+    # Placeholder for enhanced prompt constructed from Context Provider output
+    cp_enhanced_prompt = None
+    visible_context_output = None
+
     # Check if this is a CLI command (format: ":commandname args") or Context Provider Command (format: "commandname: args")
     if ':' in prompt and not prompt.startswith('http'):
         # Check for regular CLI command first (format: ":command args")
@@ -109,7 +114,7 @@ def execute_prompt(prompt: str, model: str, use_local: bool = True) -> str:
                 if potential_command in available_commands:
                     command = command_registry.get_command(potential_command)
                     if command and getattr(command, 'is_context_provider', False):
-                        # This is a Context Provider Command - return result directly (no AI model needed)
+                        # This is a Context Provider Command - expand inline and use with the LLM
                         try:
                             context = {
                                 'current_model': model,
@@ -119,17 +124,91 @@ def execute_prompt(prompt: str, model: str, use_local: bool = True) -> str:
                             # Parse command arguments
                             args = [f"{potential_command}:"] + command_args.split() if command_args else [f"{potential_command}:"]
                             context_result = command_registry.execute_command(potential_command, args, context)
-                            
-                            # ✅ FIX: Return Context Provider Command results immediately
+
                             if context_result and not context_result.startswith("❌"):
-                                return context_result  # Return result directly without AI model
+                                # Build a prompt that includes the produced context and a default instruction
+                                visible_context_output = (
+                                    f"=== Context from {potential_command}: ===\n{context_result}\n=== End Context ==="
+                                )
+                                cp_enhanced_prompt = (
+                                    f"{visible_context_output}\n\n---\n\n"
+                                    f"User question: Odpowiedz, uwzględniając powyższy kontekst."
+                                )
                             else:
                                 return f"❌ No result from {potential_command}: command"
                         except Exception as e:
                             return f"❌ Error executing {potential_command}: command: {e}"
     
-    # Process content in user message (URLs, file paths)
-    enhanced_prompt = content_processor.process_content_in_text(prompt)
+    # Process content in user message (URLs, file paths) with inline Context Provider expansion
+    enhanced_prompt = cp_enhanced_prompt
+
+    # Detect and expand inline Context Provider commands inside the prompt, e.g. "... folder: ."
+    try:
+        available_commands = command_registry.list_commands()
+        # Only handle the first inline context provider to keep parsing simple
+        for cmd_name in available_commands:
+            cmd = command_registry.get_command(cmd_name)
+            if not (cmd and getattr(cmd, 'is_context_provider', False)):
+                continue
+            label = f"{cmd_name}:"
+            idx = prompt.find(label)
+            if idx == -1:
+                continue
+
+            # Parse argument after label (support quoted or single-token args)
+            after = prompt[idx + len(label):]
+            after_stripped = after.lstrip()
+            consumed = len(after) - len(after_stripped)
+            cmd_arg = ""
+            end_pos = idx + len(label) + consumed
+            if after_stripped.startswith('"') or after_stripped.startswith("'"):
+                q = after_stripped[0]
+                # Find closing quote
+                end_q = after_stripped.find(q, 1)
+                if end_q != -1:
+                    cmd_arg = after_stripped[1:end_q]
+                    end_pos += 1 + end_q + 1  # open quote + content + close quote
+                else:
+                    cmd_arg = after_stripped[1:]
+                    end_pos = len(prompt)
+            else:
+                m = re.match(r"(\S+)", after_stripped)
+                if m:
+                    cmd_arg = m.group(1)
+                    end_pos += len(cmd_arg)
+                else:
+                    cmd_arg = after_stripped
+                    end_pos = len(prompt)
+
+            # Execute context provider to get structured context
+            context = {
+                'current_model': model,
+                'messages': [],
+                'cli_settings': cli_settings,
+            }
+            args = [label] + ([cmd_arg] if cmd_arg else [])
+            try:
+                context_result = command_registry.execute_command(cmd_name, args, context)
+            except Exception as e:
+                context_result = f"❌ Error executing {cmd_name}: command: {e}"
+
+            if context_result and not context_result.startswith("❌"):
+                # Remove the inline CP segment from the prompt to avoid confusing the model
+                prompt_without_cp = (prompt[:idx] + prompt[end_pos:]).strip()
+                visible_context_output = (
+                    f"=== Context from {cmd_name}: ===\n{context_result}\n=== End Context ==="
+                )
+                enhanced_prompt = (
+                    f"{visible_context_output}\n\n---\n\n"
+                    f"User question: {prompt_without_cp if prompt_without_cp else 'Odpowiedz, uwzględniając powyższy kontekst.'}"
+                )
+            # Process only the first matching CP
+            break
+    except Exception:
+        enhanced_prompt = None
+
+    if enhanced_prompt is None:
+        enhanced_prompt = content_processor.process_content_in_text(prompt)
     
     # For AI model queries, check if llama-cpp-python is available
     if not HAS_LLAMA_CPP:
@@ -151,7 +230,10 @@ def execute_prompt(prompt: str, model: str, use_local: bool = True) -> str:
     ]
     
     # Send to local HF model
-    return send_chat(messages, model=model, use_local=True)
+    model_response = send_chat(messages, model=model, use_local=True)
+    if visible_context_output:
+        return f"{visible_context_output}\n\n{model_response}"
+    return model_response
 
 
 def run_model_tests(model: str, use_local: bool = False) -> None:
@@ -376,8 +458,8 @@ def main():
                     else:
                         name = p.split(":", 1)[0].strip()
                         if name in registry.list_commands():
-                            # Context Provider command → no model required
-                            will_use_model = False
+                            # Context Provider command → we WILL use model with inline-expanded context
+                            will_use_model = True
                 except Exception:
                     # If detection fails, keep default behavior
                     pass
