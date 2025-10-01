@@ -1,0 +1,105 @@
+{
+  "name": "@bielik/project-command",
+  "version": "1.0.0",
+  "description": "Session-based project management system for organizing analysis artifacts",
+  "main": "main.py",
+  "type": "bielik-command",
+  "keywords": [
+    "project-management",
+    "session-management",
+    "artifacts",
+    "html-reports",
+    "bielik-command",
+    "organization"
+  ],
+  "author": "Bielik CLI",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tom-sapletta-com/bielik.git",
+    "directory": "commands/project"
+  },
+  "bugs": {
+    "url": "https://github.com/tom-sapletta-com/bielik/issues"
+  },
+  "homepage": "https://github.com/tom-sapletta-com/bielik#readme",
+  "engines": {
+    "python": ">=3.8"
+  },
+  "scripts": {
+    "test": "python -m pytest",
+    "lint": "flake8 .",
+    "format": "black .",
+    "validate": "python -c 'import main; print(\"✅ Module loads successfully\")'"
+  },
+  "bielik": {
+    "category": "project-management",
+    "command_type": "command_base",
+    "usage_format": "project: <subcommand> [args]",
+    "aliases": ["proj"],
+    "mcp_enabled": false,
+    "subcommands": [
+      "create",
+      "switch",
+      "list",
+      "info",
+      "open",
+      "validate"
+    ],
+    "examples": [
+      {
+        "command": "project: create \"My Analysis\" \"Data analysis project\" --tags data,analysis",
+        "description": "Create a new project with description and tags"
+      },
+      {
+        "command": "project: switch my-proj",
+        "description": "Switch to an existing project"
+      },
+      {
+        "command": "project: list",
+        "description": "List all projects in current session"
+      },
+      {
+        "command": "project: info",
+        "description": "Show detailed information about current project"
+      },
+      {
+        "command": "project: open abc123ef",
+        "description": "Open project HTML in browser"
+      },
+      {
+        "command": "project: validate",
+        "description": "Validate project HTML artifact"
+      }
+    ],
+    "help_topics": [
+      "Session-based project organization",
+      "HTML artifact generation and viewing",
+      "Project switching and management",
+      "Artifact validation and integrity checking",
+      "Tag-based project categorization"
+    ],
+    "output_format": {
+      "type": "project_management",
+      "contains": [
+        "project_info",
+        "artifact_summary",
+        "html_path",
+        "session_data",
+        "validation_results"
+      ]
+    },
+    "ai_integration": {
+      "provides_context": false,
+      "context_types": ["project_metadata"],
+      "follow_up_capable": true
+    },
+    "features": {
+      "html_generation": true,
+      "browser_integration": true,
+      "artifact_validation": true,
+      "session_persistence": true,
+      "tag_support": true
+    }
+  }
+}

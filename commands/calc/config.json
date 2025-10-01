@@ -7,10 +7,10 @@
   "dependencies": [],
   "mcp_enabled": false,
   "examples": [
-    ":calc 2 + 3 * 4",
-    ":calc sqrt(16) + sin(pi/2)",
-    ":calc factorial(5)",
-    ":calc log10(1000)"
+    "calc: 2 + 3 * 4",
+    "calc: sqrt(16) + sin(pi/2)",
+    "calc: factorial(5)",
+    "calc: log10(1000)"
   ],
   "help_topics": [
     "Basic arithmetic operations (+, -, *, /, **)",

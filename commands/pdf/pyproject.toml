@@ -1,0 +1,232 @@
+[build-system]
+requires = ["setuptools>=45", "wheel", "setuptools-scm[toml]>=6.2"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bielik-pdf-command"
+dynamic = ["version"]
+description = "Extract text from PDF, DOCX, TXT and other document formats"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "Bielik CLI Team"},
+]
+maintainers = [
+    {name = "Bielik CLI Team"},
+]
+keywords = [
+    "pdf",
+    "document-reader",
+    "text-extraction",
+    "docx",
+    "document-processing",
+    "bielik-command",
+    "context-provider"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Text Processing",
+    "Topic :: Office/Business :: Office Suites",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+requires-python = ">=3.8"
+dependencies = [
+    # Base dependencies - optional document processing libraries loaded conditionally
+]
+
+[project.optional-dependencies]
+pdf = [
+    "pypdf>=3.0.0",
+]
+docx = [
+    "python-docx>=0.8.11",
+]
+full = [
+    "pypdf>=3.0.0",
+    "python-docx>=0.8.11",
+    "textract>=1.6.3",
+]
+dev = [
+    "pytest>=6.0",
+    "pytest-cov>=2.0",
+    "black>=22.0",
+    "flake8>=4.0",
+    "isort>=5.0",
+    "mypy>=0.910",
+    "pypdf>=3.0.0",
+    "python-docx>=0.8.11",
+]
+test = [
+    "pytest>=6.0",
+    "pytest-cov>=2.0",
+    "pypdf>=3.0.0",
+    "python-docx>=0.8.11",
+]
+
+[project.urls]
+Homepage = "https://github.com/tom-sapletta-com/bielik"
+Repository = "https://github.com/tom-sapletta-com/bielik.git"
+Issues = "https://github.com/tom-sapletta-com/bielik/issues"
+Documentation = "https://github.com/tom-sapletta-com/bielik#readme"
+
+[project.scripts]
+bielik-pdf = "main:main"
+
+[tool.setuptools]
+package-dir = {"" = "."}
+py-modules = ["main"]
+
+[tool.setuptools_scm]
+write_to = "_version.py"
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "."]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "--verbose",
+    "-ra",
+]
+markers = [
+    "slow: marks tests as slow",
+    "integration: marks tests as integration tests",
+    "pdf: marks tests that require PDF processing",
+    "docx: marks tests that require DOCX processing",
+    "requires_deps: marks tests that require optional dependencies",
+]
+
+[tool.coverage.run]
+source = ["."]
+omit = [
+    "tests/*",
+    "_version.py",
+    "setup.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+]
+
+[tool.black]
+line-length = 88
+target-version = ["py38", "py39", "py310", "py311"]
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 88
+known_first_party = ["main"]
+
+[tool.flake8]
+max-line-length = 88
+extend-ignore = ["E203", "W503"]
+exclude = [
+    ".git",
+    "__pycache__",
+    "build",
+    "dist",
+    ".eggs",
+    "*.egg-info",
+    ".venv",
+    ".tox",
+]
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+
+# Bielik-specific configuration
+[tool.bielik]
+command_type = "context_provider"
+category = "document"
+version = "1.0.0"
+mcp_enabled = true
+mcp_server = "document-processor"
+mcp_resource = "text-extraction"
+
+[tool.bielik.usage]
+format = "pdf: <file_path> [--pages=N-M] [--metadata] [--format=text|markdown]"
+aliases = ["doc", "document"]
+
+[tool.bielik.supported_formats]
+formats = [".pdf", ".docx", ".doc", ".txt", ".md", ".rtf", ".odt"]
+
+[tool.bielik.examples]
+basic = "pdf: document.pdf"
+page_range = "pdf: report.pdf --pages=1-5"
+with_metadata = "pdf: article.docx --metadata"
+markdown_format = "pdf: text.txt --format=markdown"
+
+[tool.bielik.help_topics]
+topics = [
+    "Text extraction from multiple document formats",
+    "Page range selection for PDF files",
+    "Metadata extraction and display",
+    "Output formatting options",
+    "MCP integration for enhanced processing"
+]
+
+[tool.bielik.output_format]
+type = "document_content"
+contains = [
+    "document_info",
+    "content",
+    "metadata",
+    "formatted_result",
+    "processing_options"
+]
+
+[tool.bielik.ai_integration]
+provides_context = true
+context_types = ["document_analysis", "text_content", "file_metadata"]
+follow_up_capable = true
+
+[tool.bielik.dependencies]
+required = []
+optional = [
+    "pypdf>=3.0.0",
+    "python-docx>=0.8.11",
+    "textract>=1.6.3"
+]

@@ -3,11 +3,11 @@
 Project Management Command for Bielik CLI.
 
 This command provides session-based project management functionality:
-- :project create <name> [description] - Create new project
-- :project switch <id|name> - Switch to project
-- :project list - List all projects
-- :project info [id] - Show project information
-- :project open [id] - Open project HTML in browser
+- project: create <name> [description] - Create new project
+- project: switch <id|name> - Switch to project
+- project: list - List all projects
+- project: info [id] - Show project information
+- project: open [id] - Open project HTML in browser
 """
 
 import os
@@ -33,31 +33,31 @@ class ProjectCommand(CommandBase):
         self.description = "Session-based project management system"
         self.usage = """
 Project Management Commands:
-  :project create <name> [description] [--tags tag1,tag2]
+  project: create <name> [description] [--tags tag1,tag2]
       Create a new project with optional description and tags
       
-  :project switch <id|name>
+  project: switch <id|name>
       Switch to an existing project (by ID or name)
       
-  :project list
+  project: list
       List all projects in current session
       
-  :project info [id]
+  project: info [id]
       Show detailed information about project (current if no ID)
       
-  :project open [id]
+  project: open [id]
       Open project HTML representation in default browser
       
-  :project validate [id]
+  project: validate [id]
       Validate project HTML artifact and metadata
       
 Examples:
-  :project create "My Analysis" "Data analysis project" --tags data,analysis
-  :project switch my-proj
-  :project list
-  :project info
-  :project open abc123ef
-  :project validate
+  project: create "My Analysis" "Data analysis project" --tags data,analysis
+  project: switch my-proj
+  project: list
+  project: info
+  project: open abc123ef
+  project: validate
 """
     
     def execute(self, args: List[str], context: Dict[str, Any]) -> str:
@@ -90,7 +90,7 @@ Examples:
     def _create_project(self, args: List[str], project_manager) -> str:
         """Create a new project."""
         if not args:
-            return "❌ Project name is required\nUsage: :project create <name> [description] [--tags tag1,tag2]"
+            return "❌ Project name is required\nUsage: project: create <name> [description] [--tags tag1,tag2]"
         
         name = args[0]
         description = ""
@@ -128,7 +128,7 @@ Examples:
 - Add folder analysis: `folder: ~/documents`
 - Add calculation: `calc: 2 + 3 * 4`
 - Add PDF analysis: `pdf: document.pdf`
-- View project: `:project open`
+- View project: `project: open`
 """
         
         except Exception as e:
@@ -137,7 +137,7 @@ Examples:
     def _switch_project(self, args: List[str], project_manager) -> str:
         """Switch to an existing project."""
         if not args:
-            return "❌ Project ID or name is required\nUsage: :project switch <id|name>"
+            return "❌ Project ID or name is required\nUsage: project: switch <id|name>"
         
         identifier = args[0]
         
@@ -166,7 +166,7 @@ Examples:
 📋 **Available Projects:**
 {available or '  No projects found'}
 
-💡 Use `:project list` to see all projects or `:project create` to create a new one."""
+💡 Use `project: list` to see all projects or `project: create` to create a new one."""
         
         if project_manager.switch_to_project(target_project_id):
             project = project_manager.projects[target_project_id]
@@ -191,7 +191,7 @@ Examples:
             return """📋 **No Projects Found**
 
 🎯 Create your first project:
-`:project create "My Project" "Description here"`
+`project: create "My Project" "Description here"`
 
 💡 Projects help organize your analysis artifacts and provide beautiful HTML representations for sharing and review.
 """
@@ -215,10 +215,10 @@ Examples:
 """
         
         result += f"""💡 **Quick Actions:**
-- Switch project: `:project switch <id|name>`
-- View project: `:project open <id>`
-- Project info: `:project info <id>`
-- New project: `:project create <name>`
+- Switch project: `project: switch <id|name>`
+- View project: `project: open <id>`
+- Project info: `project: info <id>`
+- New project: `project: create <name>`
 """
         
         return result
@@ -228,7 +228,7 @@ Examples:
         project_id = args[0] if args else project_manager.current_project_id
         
         if not project_id:
-            return "❌ No active project. Use `:project switch <id>` or specify project ID."
+            return "❌ No active project. Use `project: switch <id>` or specify project ID."
         
         if project_id not in project_manager.projects:
             return f"❌ Project not found: {project_id}"
@@ -291,7 +291,7 @@ Examples:
         project_id = args[0] if args else project_manager.current_project_id
         
         if not project_id:
-            return "❌ No active project. Use `:project switch <id>` or specify project ID."
+            return "❌ No active project. Use `project: switch <id>` or specify project ID."
         
         if project_id not in project_manager.projects:
             return f"❌ Project not found: {project_id}"
@@ -327,7 +327,7 @@ Examples:
         project_id = args[0] if args else project_manager.current_project_id
         
         if not project_id:
-            return "❌ No active project. Use `:project switch <id>` or specify project ID."
+            return "❌ No active project. Use `project: switch <id>` or specify project ID."
         
         if project_id not in project_manager.projects:
             return f"❌ Project not found: {project_id}"
@@ -392,10 +392,10 @@ Each project creates a physical folder with an interactive HTML file that can be
 viewed in any browser, shared, or archived.
 
 🎯 **Workflow:**
-1. Create project: `:project create "Analysis"`
+1. Create project: `project: create "Analysis"`
 2. Add artifacts: `folder: ~/data`, `calc: 2+2`, `pdf: file.pdf`
-3. View results: `:project open`
-4. Switch projects: `:project switch <name>`
+3. View results: `project: open`
+4. Switch projects: `project: switch <name>`
 
 📁 **Project Storage:** ./bielik_projects/
 """

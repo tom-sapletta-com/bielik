@@ -22,10 +22,10 @@
     ".odt"
   ],
   "examples": [
-    ":pdf document.pdf",
-    ":pdf report.pdf --pages=1-5",
-    ":pdf article.docx --metadata",
-    ":pdf text.txt --format=markdown"
+    "pdf: document.pdf",
+    "pdf: report.pdf --pages=1-5",
+    "pdf: article.docx --metadata",
+    "pdf: text.txt --format=markdown"
   ],
   "help_topics": [
     "Text extraction from multiple document formats",

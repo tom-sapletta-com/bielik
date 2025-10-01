@@ -1,0 +1,211 @@
+[build-system]
+requires = ["setuptools>=45", "wheel", "setuptools-scm[toml]>=6.2"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bielik-folder-command"
+dynamic = ["version"]
+description = "Analyze directory contents and provide context for AI processing"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "Bielik CLI Team"},
+]
+maintainers = [
+    {name = "Bielik CLI Team"},
+]
+keywords = [
+    "directory",
+    "folder",
+    "file-analysis",
+    "context-provider",
+    "bielik-command",
+    "filesystem"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: System :: Filesystems",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Utilities",
+]
+requires-python = ">=3.8"
+dependencies = [
+    # Uses built-in pathlib and os modules
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=6.0",
+    "pytest-cov>=2.0",
+    "black>=22.0",
+    "flake8>=4.0",
+    "isort>=5.0",
+    "mypy>=0.910",
+]
+test = [
+    "pytest>=6.0",
+    "pytest-cov>=2.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/tom-sapletta-com/bielik"
+Repository = "https://github.com/tom-sapletta-com/bielik.git"
+Issues = "https://github.com/tom-sapletta-com/bielik/issues"
+Documentation = "https://github.com/tom-sapletta-com/bielik#readme"
+
+[project.scripts]
+bielik-folder = "main:main"
+
+[tool.setuptools]
+package-dir = {"" = "."}
+py-modules = ["main"]
+
+[tool.setuptools_scm]
+write_to = "_version.py"
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "."]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "--verbose",
+    "-ra",
+]
+markers = [
+    "slow: marks tests as slow",
+    "integration: marks tests as integration tests",
+    "filesystem: marks tests that interact with filesystem",
+]
+
+[tool.coverage.run]
+source = ["."]
+omit = [
+    "tests/*",
+    "_version.py",
+    "setup.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+]
+
+[tool.black]
+line-length = 88
+target-version = ["py38", "py39", "py310", "py311"]
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 88
+known_first_party = ["main"]
+
+[tool.flake8]
+max-line-length = 88
+extend-ignore = ["E203", "W503"]
+exclude = [
+    ".git",
+    "__pycache__",
+    "build",
+    "dist",
+    ".eggs",
+    "*.egg-info",
+    ".venv",
+    ".tox",
+]
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+
+# Bielik-specific configuration
+[tool.bielik]
+command_type = "context_provider"
+category = "filesystem"
+version = "1.0.0"
+mcp_enabled = false
+
+[tool.bielik.usage]
+format = "folder: <directory_path>"
+aliases = ["dir", "directory"]
+
+[tool.bielik.examples]
+home_documents = "folder: ~/documents"
+project_directory = "folder: /path/to/project"
+current_directory = "folder: ."
+
+[tool.bielik.help_topics]
+topics = [
+    "Provides file counts, types, sizes, and structure overview",
+    "Generates context data for AI to answer follow-up questions", 
+    "Run folder: command first, then ask AI questions about the directory"
+]
+
+[[tool.bielik.help_topics.detailed]]
+topic = "directory_analysis"
+description = "Provides file counts, types, sizes, and structure overview"
+
+[[tool.bielik.help_topics.detailed]]
+topic = "context_provider"
+description = "Generates context data for AI to answer follow-up questions"
+
+[[tool.bielik.help_topics.detailed]]
+topic = "usage_workflow"
+description = "Run folder: command first, then ask AI questions about the directory"
+
+[tool.bielik.output_format]
+type = "structured_context"
+contains = [
+    "directory_path",
+    "file_summary",
+    "folder_summary",
+    "file_types_distribution", 
+    "largest_files",
+    "directory_structure"
+]
+
+[tool.bielik.ai_integration]
+provides_context = true
+context_types = ["directory_analysis", "file_system"]
+follow_up_capable = true

@@ -1,0 +1,197 @@
+[build-system]
+requires = ["setuptools>=45", "wheel", "setuptools-scm[toml]>=6.2"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bielik-calc-command"
+dynamic = ["version"]
+description = "Advanced calculator with mathematical functions and expression evaluation"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "Bielik CLI Team"},
+]
+maintainers = [
+    {name = "Bielik CLI Team"},
+]
+keywords = [
+    "calculator",
+    "math", 
+    "expressions",
+    "scientific-calculator",
+    "bielik-command",
+    "context-provider"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+requires-python = ">=3.8"
+dependencies = [
+    # No external dependencies - uses built-in math module
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=6.0",
+    "pytest-cov>=2.0",
+    "black>=22.0",
+    "flake8>=4.0",
+    "isort>=5.0",
+    "mypy>=0.910",
+]
+test = [
+    "pytest>=6.0",
+    "pytest-cov>=2.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/tom-sapletta-com/bielik"
+Repository = "https://github.com/tom-sapletta-com/bielik.git"
+Issues = "https://github.com/tom-sapletta-com/bielik/issues"
+Documentation = "https://github.com/tom-sapletta-com/bielik#readme"
+
+[project.scripts]
+bielik-calc = "main:main"
+
+[tool.setuptools]
+package-dir = {"" = "."}
+py-modules = ["main"]
+
+[tool.setuptools_scm]
+write_to = "_version.py"
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "."]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "--verbose",
+    "-ra",
+]
+markers = [
+    "slow: marks tests as slow",
+    "integration: marks tests as integration tests",
+]
+
+[tool.coverage.run]
+source = ["."]
+omit = [
+    "tests/*",
+    "_version.py",
+    "setup.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+]
+
+[tool.black]
+line-length = 88
+target-version = ["py38", "py39", "py310", "py311"]
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 88
+known_first_party = ["main"]
+
+[tool.flake8]
+max-line-length = 88
+extend-ignore = ["E203", "W503"]
+exclude = [
+    ".git",
+    "__pycache__",
+    "build",
+    "dist",
+    ".eggs",
+    "*.egg-info",
+    ".venv",
+    ".tox",
+]
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+
+# Bielik-specific configuration
+[tool.bielik]
+command_type = "context_provider"
+category = "math"
+version = "1.0.0"
+mcp_enabled = false
+
+[tool.bielik.usage]
+format = "calc: <mathematical_expression>"
+aliases = ["calculate", "math"]
+
+[tool.bielik.examples]
+basic_arithmetic = "calc: 2 + 3 * 4"
+functions = "calc: sqrt(16) + sin(pi/2)"
+factorial = "calc: factorial(5)"
+logarithm = "calc: log10(1000)"
+
+[tool.bielik.help_topics]
+topics = [
+    "Basic arithmetic operations (+, -, *, /, **)",
+    "Mathematical functions (sin, cos, tan, sqrt, log, etc.)",
+    "Constants (pi, e, tau, inf)",
+    "Expression evaluation with parentheses"
+]
+
+[tool.bielik.output_format]
+type = "calculation_result"
+contains = [
+    "expression",
+    "result",
+    "formatted_result", 
+    "calculation_metadata"
+]
+
+[tool.bielik.ai_integration]
+provides_context = true
+context_types = ["mathematical_calculation", "numerical_analysis"]
+follow_up_capable = true

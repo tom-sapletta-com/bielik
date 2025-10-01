@@ -1,0 +1,80 @@
+{
+  "name": "@bielik/calc-command",
+  "version": "1.0.0",
+  "description": "Advanced calculator with mathematical functions and expression evaluation",
+  "main": "main.py",
+  "type": "bielik-command",
+  "keywords": [
+    "calculator",
+    "math",
+    "expressions",
+    "scientific-calculator",
+    "bielik-command",
+    "context-provider"
+  ],
+  "author": "Bielik CLI",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tom-sapletta-com/bielik.git",
+    "directory": "commands/calc"
+  },
+  "bugs": {
+    "url": "https://github.com/tom-sapletta-com/bielik/issues"
+  },
+  "homepage": "https://github.com/tom-sapletta-com/bielik#readme",
+  "engines": {
+    "python": ">=3.8"
+  },
+  "scripts": {
+    "test": "python -m pytest",
+    "lint": "flake8 .",
+    "format": "black .",
+    "validate": "python -c 'import main; print(\"✅ Module loads successfully\")'"
+  },
+  "bielik": {
+    "category": "math",
+    "command_type": "context_provider",
+    "usage_format": "calc: <mathematical_expression>",
+    "aliases": ["calculate", "math"],
+    "mcp_enabled": false,
+    "examples": [
+      {
+        "command": "calc: 2 + 3 * 4",
+        "description": "Basic arithmetic with order of operations"
+      },
+      {
+        "command": "calc: sqrt(16) + sin(pi/2)",
+        "description": "Mathematical functions with constants"
+      },
+      {
+        "command": "calc: factorial(5)",
+        "description": "Factorial calculation"
+      },
+      {
+        "command": "calc: log10(1000)",
+        "description": "Logarithmic functions"
+      }
+    ],
+    "help_topics": [
+      "Basic arithmetic operations (+, -, *, /, **)",
+      "Mathematical functions (sin, cos, tan, sqrt, log, etc.)",
+      "Constants (pi, e, tau, inf)",
+      "Expression evaluation with parentheses"
+    ],
+    "output_format": {
+      "type": "calculation_result",
+      "contains": [
+        "expression",
+        "result", 
+        "formatted_result",
+        "calculation_metadata"
+      ]
+    },
+    "ai_integration": {
+      "provides_context": true,
+      "context_types": ["mathematical_calculation", "numerical_analysis"],
+      "follow_up_capable": true
+    }
+  }
+}
