@@ -19,6 +19,7 @@ class ChatCommunicator:
         self.config = get_config()
         self.logger = get_logger(__name__)
         self.model_manager = get_model_manager()
+        self._model_cache = {}  # Cache for loaded models: {model_path: LocalLlamaRunner}
         
     def send_chat(self, messages: List[Dict], model: str = None, use_local: bool = True) -> str:
         """
@@ -49,8 +50,16 @@ class ChatCommunicator:
             if not model_path:
                 return f"[LOCAL MODEL ERROR] Model {model} path not found"
             
-            # Initialize local runner
-            runner = LocalLlamaRunner(model_path)
+            # Check if model is already loaded in cache
+            if model_path in self._model_cache:
+                self.logger.debug(f"Using cached model: {model}")
+                runner = self._model_cache[model_path]
+            else:
+                # Initialize local runner and cache it
+                self.logger.info(f"Loading model into cache: {model}")
+                runner = LocalLlamaRunner(model_path)
+                self._model_cache[model_path] = runner
+            
             response = runner.chat(messages)
             self.logger.info(f"Local HF model response received for {model}")
             return response
@@ -59,6 +68,23 @@ class ChatCommunicator:
             self.logger.error(f"Local HF model failed for {model}: {e}")
             return f"[LOCAL MODEL ERROR] {e}"
     
+    def clear_model_cache(self, model: str = None):
+        """
+        Clear model cache to free memory.
+        
+        Args:
+            model: Specific model to clear, or None to clear all
+        """
+        if model is None:
+            # Clear all cached models
+            self.logger.info("Clearing all cached models")
+            self._model_cache.clear()
+        else:
+            # Clear specific model
+            model_path = self.model_manager.get_model_path(model)
+            if model_path and model_path in self._model_cache:
+                self.logger.info(f"Clearing cached model: {model}")
+                del self._model_cache[model_path]
 
 
 # Global communicator instance

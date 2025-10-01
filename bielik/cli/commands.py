@@ -54,6 +54,7 @@ class CommandProcessor:
         print("  :storage - show storage statistics")
         print("  :name <name>      - change your display name")
         print("  :settings         - show current settings")
+        print("  :cache            - clear model cache (free memory)")
         print("  :download-bielik  - download Polish Bielik models from HuggingFace")
         print("  :exit    - end session")
         print("  Ctrl+C   - quick exit")
@@ -248,6 +249,15 @@ class CommandProcessor:
             print(f"  🔄 Auto-switch after download: {settings['auto_switch']}")
             print(f"  📄 Settings file: {settings['env_file_path']}")
             print(f"  💾 File exists: {'✅' if settings['env_file_exists'] else '❌'}")
+            return True, None, messages
+        
+        # Cache command - clear model cache to free memory
+        elif command == ":cache":
+            from .send_chat import get_chat_communicator
+            communicator = get_chat_communicator()
+            communicator.clear_model_cache()
+            print("🧹 Model cache cleared - memory freed")
+            print("💡 Next prompt will reload the model (~5-6 seconds)")
             return True, None, messages
         
         # Download Bielik models command
