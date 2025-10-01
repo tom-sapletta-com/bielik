@@ -1,5 +1,18 @@
 # Configuration Files Migration - package.json & pyproject.toml
 
+## 📋 **Navigation Menu**
+- [✅ Completed Work](#-completed-work)
+- [🎯 Package.json Features](#-packagejson-features)
+- [🐍 Pyproject.toml Features](#-pyprojecttoml-features)
+- [🧪 Updated Testing Framework](#-updated-testing-framework)
+- [📊 Command Comparison](#-command-comparison)
+- [🔧 Development Benefits](#-development-benefits)
+- [🚀 Next Steps](#-next-steps)
+- [📝 Migration Script Usage](#-migration-script-usage)
+- [🎉 Validation Results](#-validation-results)
+
+---
+
 ## 📋 **Migration Summary**
 
 Successfully migrated all Bielik command projects from legacy `config.json` files to modern `package.json` and `pyproject.toml` configuration files. This migration provides better standardization, packaging capabilities, and development tooling integration.
