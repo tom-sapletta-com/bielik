@@ -7,6 +7,7 @@ bielik.egg-info
 dist
 .locks
 venv
+models
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

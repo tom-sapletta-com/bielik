@@ -6,9 +6,16 @@
 
 > 🇵🇱 **Bielik models** are available on **[HuggingFace Hub](https://huggingface.co/speakleash)**
 
+[![Build](https://img.shields.io/github/actions/workflow/status/tom-sapletta-com/bielik/python-app.yml?branch=main)](https://github.com/tom-sapletta-com/bielik/actions)
 [![PyPI](https://img.shields.io/pypi/v/bielik.svg)](https://pypi.org/project/bielik/)
+[![Downloads](https://img.shields.io/pypi/dm/bielik)](https://pypi.org/project/bielik/)
 [![Python](https://img.shields.io/pypi/pyversions/bielik.svg)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+[![Stars](https://img.shields.io/github/stars/tom-sapletta-com/bielik?style=social)](https://github.com/tom-sapletta-com/bielik)
+[![Docker](https://img.shields.io/badge/Docker-Ready-blue?logo=docker)](docs/DOCKER.md)
+[![Conda](https://img.shields.io/badge/Conda%20Env-ready-green?logo=anaconda)](docs/INSTALLATION.md)
+[![HuggingFace](https://img.shields.io/badge/HuggingFace-SpeakLeash-orange?logo=huggingface)](https://huggingface.co/speakleash)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](docs/CONTRIBUTING.md)
 
 ---
 
