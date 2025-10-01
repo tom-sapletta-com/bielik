@@ -6,6 +6,7 @@ Handles .env files, environment variables, and default settings.
 
 import os
 import logging
+import warnings
 from pathlib import Path
 from typing import Optional, Dict, Any, List
 from dotenv import load_dotenv
@@ -90,7 +91,7 @@ class BielikConfig:
         self.AUTO_DOWNLOAD_MODEL = self._get_env_bool("AUTO_DOWNLOAD_MODEL", False)
         
         # Logging Configuration
-        self.LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO").upper()
+        self.LOG_LEVEL = os.environ.get("LOG_LEVEL", "WARNING").upper()
         self.LOG_FORMAT = os.environ.get("LOG_FORMAT", "%(asctime)s - %(name)s - %(levelname)s - %(message)s")
         self.LOG_TO_FILE = self._get_env_bool("LOG_TO_FILE", False)
         self.LOG_FILE_PATH = os.environ.get("LOG_FILE_PATH", "./bielik.log")
@@ -147,6 +148,10 @@ class BielikConfig:
                 logger.addHandler(file_handler)
             except Exception as e:
                 logger.warning(f"Could not setup file logging: {e}")
+        
+        # Suppress noisy DeprecationWarnings in normal (non-verbose) mode
+        if not self.DEBUG_MODE and not self.VERBOSE_OUTPUT:
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
         
         self.logger = logger
     

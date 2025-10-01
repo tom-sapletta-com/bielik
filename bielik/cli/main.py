@@ -8,7 +8,16 @@ including argument parsing and the interactive chat loop.
 
 import sys
 import argparse
+import warnings
 from typing import List, Dict
+
+# Suppress deprecation warnings (e.g., CryptographyDeprecationWarning from pypdf)
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+try:
+    from cryptography.utils import CryptographyDeprecationWarning  # type: ignore
+    warnings.filterwarnings("ignore", category=CryptographyDeprecationWarning)
+except Exception:
+    pass
 
 from .commands import CommandProcessor
 from .send_chat import send_chat
@@ -348,7 +357,34 @@ def main():
     if args.prompt:
         # Execute single prompt and exit
         try:
-            print(f"🤖 Using model: {current_model}")
+            # Decide if this prompt will actually use the model
+            will_use_model = True
+            p = args.prompt.strip()
+            if ":" in p and not p.startswith("http"):
+                # Check against dynamic command registry to detect CLI/context provider
+                try:
+                    from .command_api import get_command_registry
+                    registry = get_command_registry()
+                    if p.startswith(":"):
+                        parts = p[1:].split(" ", 1)
+                        cmd_name = parts[0].strip()
+                        if cmd_name in registry.list_commands():
+                            cmd = registry.get_command(cmd_name)
+                            # Direct CLI command → no model required
+                            if cmd and not getattr(cmd, "is_context_provider", False):
+                                will_use_model = False
+                    else:
+                        name = p.split(":", 1)[0].strip()
+                        if name in registry.list_commands():
+                            # Context Provider command → no model required
+                            will_use_model = False
+                except Exception:
+                    # If detection fails, keep default behavior
+                    pass
+
+            if will_use_model:
+                print(f"🤖 Using model: {current_model}")
+
             response = execute_prompt(args.prompt, current_model, use_local_model)
             print(response)
             return
