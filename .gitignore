@@ -1,6 +1,11 @@
 .idea
 .venv
+.github
 bielik_projects
+bielik.egg-info
+.dist
+dist
+.locks
 venv
 models
 # Byte-compiled / optimized / DLL files

@@ -4,95 +4,121 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "bielik"
-version = "0.1.24"
-description = "Bielik — local chat client (CLI + web) with HuggingFace Integration"
+version = "0.2.6"  # Major version bump for Conda transition
+description = "Bielik — Local-first AI assistant with HuggingFace and SpeakLeash models"
 authors = [{name = "Tom Sapletta"}]
 license = "Apache-2.0"
 readme = "README.md"
-requires-python = ">=3.8"
-keywords = ["ollama", "chat", "llm", "bielik", "polish", "ai", "assistant"]
+requires-python = ">=3.9"  # Bump minimum Python version for better compatibility
+keywords = ["llm", "chat", "huggingface", "bielik", "polish", "ai", "assistant"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Intended Audience :: End Users/Desktop",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
     "Topic :: Software Development :: Libraries",
     "Topic :: Communications :: Chat",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
-    "Operating System :: OS Independent",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: Microsoft :: Windows",
     "Natural Language :: Polish",
     "Natural Language :: English"
 ]
 
-# CORE DEPENDENCIES - ESSENTIAL FUNCTIONALITY ONLY
+# Core Dependencies - Minimal set required for basic functionality
 dependencies = [
-  # Core CLI & API functionality
-  "fastapi>=0.88.0,<1.0.0",
-  "uvicorn[standard]>=0.20.0,<1.0.0", 
-  "requests>=2.25.0,<3.0.0",
-  "python-dotenv>=0.19.0,<2.0.0",
-  
-  # Text processing & document analysis  
-  "beautifulsoup4>=4.8.0,<5.0.0",  # Compatible with textract requirement
-  "html2text>=2020.1.16,<2025.0.0",
-  "python-magic>=0.4.24,<1.0.0",
-  "pypdf>=3.0.0,<4.0.0",
-  "python-docx>=0.8.11,<1.0.0",
-  
-  # HuggingFace model management (essential for downloading models)
-  "huggingface_hub>=0.16.0,<1.0.0"
-  
-  # HEAVY/COMPILATION PACKAGES MOVED TO OPTIONAL DEPENDENCIES:
-  # llama-cpp-python, Pillow, transformers, torch (~2GB+) - install with extras
+    # Core functionality
+    "typer>=0.9.0,<1.0.0",
+    "rich>=13.0.0,<14.0.0",
+    "python-dotenv>=1.0.0,<2.0.0",
+    
+    # File and document processing
+    "pypdf>=3.0.0,<4.0.0",
+    "python-docx>=0.8.11,<1.0.0",
+    "beautifulsoup4>=4.8.0,<5.0.0",
+    "html2text>=2020.1.16,<2025.0.0",
+    
+    # HuggingFace integration (core)
+    "huggingface-hub>=0.16.0,<1.0.0",
+    "tokenizers>=0.13.0,<1.0.0",
+    "sentencepiece>=0.1.99,<1.0.0",
+    "protobuf>=4.21.0,<5.0.0"
 ]
 
 [project.optional-dependencies]
-# Basic Ollama integration (lightweight)
-ollama = ["ollama>=0.1.0,<1.0.0"]
-
-# Extended local support with AI models (includes llama-cpp-python)
+# Local model support (CPU/GPU)
 local = [
-  "llama-cpp-python>=0.2.0,<1.0.0",                   # Local HF model support
-  "textract>=1.6.3,<1.6.4; sys_platform != 'win32'"  # Fixed version constraint
+    "llama-cpp-python>=0.2.0,<1.0.0",
+    "sentence-transformers>=2.2.0,<3.0.0"
 ]
 
-# HEAVY VISION & AI PACKAGES (~2GB+) - Install on demand
-vision = [
-  "Pillow>=9.0.0,<11.0.0",           # Image processing (~5MB)
-  "transformers>=4.25.0,<5.0.0",     # HuggingFace models (~100MB)  
-  "torch>=1.12.0,<3.0.0"            # PyTorch + CUDA (~2GB!)
-]
-
-# GPU acceleration (includes vision + CUDA)
+# GPU acceleration (includes local)
 gpu = [
-  "bielik[vision]",                   # Include vision packages
-  "llama-cpp-python[cuda]>=0.2.0,<1.0.0"
+    "bielik[local]",
+    "torch>=2.0.0,<3.0.0",
+    "transformers>=4.30.0,<5.0.0",
+    "accelerate>=0.20.0,<1.0.0",
+    "bitsandbytes>=0.40.0,<1.0.0"
+]
+
+# Full AI capabilities (includes gpu)
+ai = [
+    "bielik[gpu]",
+    "transformers[torch]>=4.30.0,<5.0.0",
+    "datasets>=2.12.0,<3.0.0",
+    "evaluate>=0.4.0,<1.0.0"
 ]
 
 # Development tools
 dev = [
-  "pytest>=6.0.0,<8.0.0",
-  "pytest-cov>=2.10.0,<5.0.0", 
-  "flake8>=4.0.0,<7.0.0",
-  "black>=22.0.0,<24.0.0",
-  "isort>=5.10.0,<6.0.0",
-  "build>=0.8.0,<1.0.0",
-  "twine>=4.0.0,<5.0.0"
+    "bielik[ai]",  # Include all AI capabilities
+    "pytest>=7.0.0,<8.0.0",
+    "pytest-cov>=4.0.0,<5.0.0",
+    "flake8>=6.0.0,<7.0.0",
+    "black>=23.0.0,<24.0.0",
+    "isort>=5.12.0,<6.0.0",
+    "mypy>=1.0.0,<2.0.0",
+    "build>=0.10.0,<1.0.0",
+    "twine>=4.0.0,<5.0.0",
+    "pre-commit>=3.0.0,<4.0.0"
 ]
 
-# Docker support
-docker = [
-  "docker>=6.0.0,<7.0.0"
+# Documentation
+docs = [
+    "mkdocs>=1.4.0,<2.0.0",
+    "mkdocs-material>=9.0.0,<10.0.0",
+    "mkdocstrings[python]>=0.20.0,<1.0.0"
 ]
 
-# Everything (for advanced users)
+# Testing infrastructure
+test = [
+    "pytest>=7.0.0,<8.0.0",
+    "pytest-cov>=4.0.0,<5.0.0",
+    "pytest-mock>=3.10.0,<4.0.0",
+    "pytest-asyncio>=0.20.0,<1.0.0"
+]
+
+# CLI completion
+completion = [
+    "click-completion>=0.5.0,<1.0.0",
+    "shellingham>=1.5.0,<2.0.0"
+]
+
+# Web interface
+web = [
+    "fastapi>=0.95.0,<1.0.0",
+    "uvicorn[standard]>=0.21.0,<1.0.0",
+    "jinja2>=3.0.0,<4.0.0",
+    "python-multipart>=0.0.6,<1.0.0"
+]
+
+# Everything (for development and testing)
 all = [
-  "bielik[ollama,local,vision,dev,docker]"
+    "bielik[ai,dev,docs,test,completion,web]"
 ]
 
 [project.scripts]

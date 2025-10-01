@@ -128,27 +128,160 @@ Now you can test it directly in the shell, using several features that allow you
 
 ---
 
-## ⚙️ Installation Options
+## ⚡ Performance Optimized Installation
 
-Bielik supports **universal multiplatform installation** that works seamlessly on **Windows**, **Linux**, and **macOS**.
+Bielik now features **lazy loading** and **optimized startup** for faster performance. We recommend using **Conda** for the most reliable installation experience.
 
-## 🌍 **Universal Multiplatform Installation** ⭐ **RECOMMENDED**
+# 🚀 Installation Guide
 
-**Cross-platform automated installer** with smart dependency detection:
+## 🐍 **Conda Installation (Recommended)**
 
-### ⚡ **One-Liner Installation** (Fastest)
+### Prerequisites
+- Install [Miniconda](https://docs.conda.io/en/latest/miniconda.html) or [Anaconda](https://www.anaconda.com/download/)
+- For GPU support: Install appropriate NVIDIA drivers and CUDA toolkit
 
-**Unix/Linux/macOS:**
+### 1. Create and Activate Environment
+
 ```bash
-curl -sSL https://raw.githubusercontent.com/tom-sapletta-com/bielik/main/quick-install.sh | bash
+# Create a new conda environment
+conda create -n bielik python=3.11 -y
+conda activate bielik
 ```
 
-**Windows PowerShell:**
-```powershell
-iwr https://raw.githubusercontent.com/tom-sapletta-com/bielik/main/quick-install.bat -OutFile quick-install.bat; .\quick-install.bat
+### 2. Install System Dependencies
+
+```bash
+conda install -c conda-forge -y \
+    cmake \
+    make \
+    gcc_linux-64 \
+    gxx_linux-64 \
+    libgcc \
+    libstdcxx-ng
 ```
 
-### 📥 **Manual Installation (Any Platform)**
+### 3. Install PyTorch (CPU or GPU)
+
+For CPU-only:
+```bash
+conda install -c pytorch -y \
+    pytorch \
+    torchvision \
+    torchaudio \
+    cpuonly
+```
+
+For NVIDIA GPU (CUDA 11.8):
+```bash
+conda install -c pytorch -y \
+    pytorch \
+    torchvision \
+    torchaudio \
+    pytorch-cuda=11.8 \
+    -c nvidia
+```
+
+### 4. Install Bielik and Dependencies
+
+```bash
+# Install Hugging Face libraries
+conda install -c huggingface -y \
+    transformers \
+    accelerate \
+    sentencepiece \
+    huggingface-hub \
+    bitsandbytes
+
+# Install llama-cpp-python via conda (recommended - avoids C++ compilation issues)
+conda install -c conda-forge llama-cpp-python
+
+# Install Bielik in development mode
+git clone https://github.com/tom-sapletta-com/bielik.git
+cd bielik
+conda develop .
+```
+
+### 5. Verify Installation
+
+```bash
+python scripts/verify_installation.py
+```
+
+## ⚡ Optimizing Model Loading
+
+Bielik now includes optimized model loading with a 10-second timeout and debug mode:
+
+```bash
+# Start Bielik with debug mode (shows detailed loading information)
+BIELIK_DEBUG=1 bielik
+
+# Set a custom timeout (in seconds)
+BIELIK_LOAD_TIMEOUT=15 bielik
+```
+
+If a model takes longer than the timeout to load, the debugger will automatically activate and show detailed logs to help diagnose the issue.
+
+## 🖥️ Platform-Specific Notes
+
+### Windows
+```bash
+# Use Anaconda Prompt with Administrator privileges
+# Install Visual Studio Build Tools with C++ workload
+```
+
+### macOS (Intel/Apple Silicon)
+```bash
+# For Apple Silicon with Metal acceleration:
+conda install -c conda-forge llama-cpp-python
+
+# Or use pip with Metal flags (if conda not available):
+# CMAKE_ARGS="-DLLAMA_METAL=on" FORCE_CMAKE=1 \
+# pip install llama-cpp-python --no-cache-dir
+```
+
+### Linux
+```bash
+# Install system dependencies
+sudo apt-get update && sudo apt-get install -y \
+    build-essential \
+    libssl-dev \
+    zlib1g-dev \
+    libbz2-dev \
+    libreadline-dev \
+    libsqlite3-dev \
+    wget \
+    llvm \
+    libncurses5-dev \
+    libncursesw5-dev \
+    xz-utils \
+    tk-dev \
+    libffi-dev \
+    liblzma-dev \
+    python-openssl \
+    git
+```
+
+## 🛠️ Troubleshooting
+
+### Model Loading Issues
+If models are loading slowly or timing out:
+1. Check your internet connection
+2. Verify you have enough disk space (~10GB free recommended)
+3. Enable debug mode: `BIELIK_DEBUG=1 bielik`
+4. Try clearing the model cache: `rm -rf ~/.cache/huggingface/hub`
+
+### GPU Acceleration
+To enable GPU acceleration, ensure you have:
+1. Latest NVIDIA drivers installed
+2. CUDA toolkit matching your PyTorch version
+3. Properly configured `LD_LIBRARY_PATH`
+
+### Common Errors
+- **CUDA out of memory**: Reduce batch size or use a smaller model
+- **Missing libraries**: Install required system dependencies
+- **Permission errors**: Run with appropriate permissions or use `--user` flag
+
+## 🛠 **Manual Installation**
 
 ```bash
 # 1. Clone repository
@@ -158,6 +291,75 @@ cd bielik
 # 2. Run universal installer
 python install.py
 ```
+
+## 🔧 Troubleshooting
+
+### Common Issues
+
+#### 1. Conda Environment Issues
+
+**Problem**: Conda command not found  
+**Solution**:
+```bash
+# Add Conda to PATH
+export PATH="$HOME/miniconda3/bin:$PATH"
+# Initialize Conda for your shell
+eval "$(conda shell.bash hook)"
+```
+
+#### 2. CUDA/GPU Support
+
+**Problem**: CUDA not detected  
+**Solution**: Install CUDA toolkit and configure Conda:
+```bash
+conda install -c nvidia cuda-toolkit
+conda install -c conda-forge cudatoolkit-dev
+```
+
+#### 3. Slow Model Loading
+
+**Problem**: First load is slow  
+**Solution**: This is normal for the first load. Subsequent loads will be faster thanks to lazy loading.
+
+#### 4. Missing Dependencies
+
+**Problem**: Missing system libraries  
+**Solution**: Install required system packages:
+```bash
+# Ubuntu/Debian
+sudo apt-get update && sudo apt-get install -y \
+    build-essential \
+    cmake \
+    libopenblas-dev \
+    liblapack-dev \
+    libjpeg-dev
+
+# CentOS/RHEL
+sudo yum groupinstall -y "Development Tools"
+sudo yum install -y cmake openblas-devel lapack-devel libjpeg-turbo-devel
+```
+
+### Verifying Your Installation
+
+Run the verification script to check for common issues:
+
+```bash
+python scripts/verify_installation.py
+```
+
+### Getting Help
+
+If you encounter any issues, please:
+1. Check the [GitHub Issues](https://github.com/tom-sapletta-com/bielik/issues) for known problems
+2. Run the verification script and include its output when reporting issues
+3. Provide details about your system and the exact error message
+
+## 🚀 Performance Tips
+
+1. **First Run**: The first run will be slower as models are loaded and cached
+2. **Subsequent Runs**: Enjoy faster startup times thanks to lazy loading
+3. **Memory Usage**: Close other memory-intensive applications when running Bielik
+4. **GPU Acceleration**: For best performance, use a system with CUDA-compatible GPU
 
 ### 🪟 **Windows Users**
 ```batch
@@ -270,6 +472,7 @@ pip install bielik[vision]
 pip install bielik[local]    # Local model execution
 pip install bielik[gpu]      # GPU acceleration
 pip install bielik[dev]      # Development tools
+pip install bielik[vision]   # Vision capabilities
 ```
 
 ---
@@ -803,186 +1006,7 @@ cd commands/mycommand
 
 #### **Basic Context Provider Command Template**
 
-```python
-# commands/mycommand/main.py
-from typing import List, Dict, Any
-from bielik.cli.command_api import ContextProviderCommand
 
-class MyCommand(ContextProviderCommand):
-    def __init__(self):
-        super().__init__(
-            name="mycommand",
-            description="Custom context provider that analyzes something",
-            usage="mycommand: <path_or_input>"
-        )
-    
-    def provide_context(self, args: List[str], context: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Generate context data from the provided arguments.
-        
-        Args:
-            args: List of arguments after 'mycommand:'
-            context: Additional context data
-            
-        Returns:
-            Dict containing structured context data
-        """
-        if not args:
-            return {
-                "error": "Please provide input after 'mycommand:'",
-                "usage": self.get_usage()
-            }
-        
-        input_data = " ".join(args)
-        
-        # Your custom logic here
-        analysis_result = self._analyze_input(input_data)
-        
-        return {
-            "command": "mycommand",
-            "input": input_data,
-            "analysis": analysis_result,
-            "timestamp": context.get("timestamp", ""),
-            "context_type": "custom_analysis"
-        }
-    
-    def _analyze_input(self, input_data: str) -> Dict[str, Any]:
-        """Custom analysis logic - implement your functionality here."""
-        return {
-            "input_length": len(input_data),
-            "word_count": len(input_data.split()),
-            "type": "text_analysis",
-            "summary": f"Analyzed text with {len(input_data)} characters"
-        }
-
-# Required: Command instance for the registry
-command = MyCommand()
-```
-
-#### **Advanced Example: Git Repository Analyzer**
-
-```python
-# commands/git/main.py
-import os
-import subprocess
-from typing import List, Dict, Any
-from bielik.cli.command_api import ContextProviderCommand
-
-class GitCommand(ContextProviderCommand):
-    def __init__(self):
-        super().__init__(
-            name="git",
-            description="Analyzes Git repository information and recent commits",
-            usage="git: [path_to_repo]"
-        )
-    
-    def provide_context(self, args: List[str], context: Dict[str, Any]) -> Dict[str, Any]:
-        repo_path = args[0] if args else "."
-        
-        if not self._is_git_repo(repo_path):
-            return {
-                "error": f"Not a git repository: {repo_path}",
-                "suggestion": "Run this command in a git repository directory"
-            }
-        
-        return {
-            "command": "git",
-            "repository_path": os.path.abspath(repo_path),
-            "branch_info": self._get_branch_info(repo_path),
-            "recent_commits": self._get_recent_commits(repo_path),
-            "status": self._get_status(repo_path),
-            "remote_info": self._get_remote_info(repo_path),
-            "context_type": "git_analysis"
-        }
-    
-    def _is_git_repo(self, path: str) -> bool:
-        """Check if directory is a git repository."""
-        try:
-            result = subprocess.run(
-                ["git", "rev-parse", "--git-dir"],
-                cwd=path, capture_output=True, text=True
-            )
-            return result.returncode == 0
-        except:
-            return False
-    
-    def _get_branch_info(self, path: str) -> Dict[str, str]:
-        """Get current branch information."""
-        try:
-            branch_result = subprocess.run(
-                ["git", "branch", "--show-current"],
-                cwd=path, capture_output=True, text=True
-            )
-            return {
-                "current_branch": branch_result.stdout.strip(),
-                "status": "active"
-            }
-        except:
-            return {"error": "Could not determine branch info"}
-    
-    def _get_recent_commits(self, path: str, limit: int = 5) -> List[Dict[str, str]]:
-        """Get recent commit information."""
-        try:
-            result = subprocess.run([
-                "git", "log", "--oneline", f"-{limit}",
-                "--pretty=format:%h|%an|%ar|%s"
-            ], cwd=path, capture_output=True, text=True)
-            
-            commits = []
-            for line in result.stdout.strip().split('\n'):
-                if '|' in line:
-                    hash_id, author, date, message = line.split('|', 3)
-                    commits.append({
-                        "hash": hash_id,
-                        "author": author,
-                        "date": date,
-                        "message": message
-                    })
-            return commits
-        except:
-            return [{"error": "Could not fetch commit history"}]
-    
-    def _get_status(self, path: str) -> Dict[str, Any]:
-        """Get git status information."""
-        try:
-            result = subprocess.run(
-                ["git", "status", "--porcelain"],
-                cwd=path, capture_output=True, text=True
-            )
-            
-            modified_files = []
-            for line in result.stdout.strip().split('\n'):
-                if line.strip():
-                    status, filename = line[:2], line[3:]
-                    modified_files.append({
-                        "file": filename,
-                        "status": status.strip()
-                    })
-            
-            return {
-                "modified_files": modified_files,
-                "clean": len(modified_files) == 0
-            }
-        except:
-            return {"error": "Could not get status"}
-    
-    def _get_remote_info(self, path: str) -> Dict[str, str]:
-        """Get remote repository information."""
-        try:
-            result = subprocess.run(
-                ["git", "remote", "get-url", "origin"],
-                cwd=path, capture_output=True, text=True
-            )
-            return {
-                "origin_url": result.stdout.strip(),
-                "has_remote": True
-            }
-        except:
-            return {"has_remote": False}
-
-# Required: Command instance for the registry
-command = GitCommand()
-```
 
 ### 📄 **Configuration File (config.json)**
 
@@ -1205,10 +1229,16 @@ bielik/
     └── python-publish.yml
 ```
 
+## Author
+
+Tom Sapletta — DevOps Engineer & Systems Architect
+
+    💻 15+ years in DevOps, Software Development, and Systems Architecture
+    🏢 Founder & CEO at Telemonit (Portigen - edge computing power solutions)
+    🌍 Based in Germany | Open to remote collaboration
+    📚 Passionate about edge computing, hypermodularization, and automated SDLC
 
 
 ## 📜 License
 
 [Apache License 2.0](LICENSE)
-
-

@@ -1,127 +1,102 @@
-.PHONY: install dev lint test build publish clean setup-dev bump-patch bump-minor bump-major publish-patch publish-minor publish-major docker-test docker-test-ubuntu docker-test-debian docker-test-alpine docker-test-centos docker-test-arch docker-test-oneliner docker-build docker-clean test-all
+.PHONY: help install install-dev verify conda-env conda-dev conda-clean lint test build publish clean bump-patch bump-minor bump-major docker-test docker-test-ubuntu docker-test-debian docker-test-alpine docker-test-centos docker-test-arch docker-test-oneliner docker-build docker-clean test-all
 
-install:
-	@echo "📦 Installing Bielik CLI..."
-	@python3 -m pip install --upgrade pip
-	@python3 -m pip install -e .
+# Default target when running just 'make'
+help:
+	@echo "\n🦅 Bielik Development Commands"
+	@echo "=========================="
+	@echo "\n📦 Installation & Setup:"
+	@echo "  make install       - Universal installation (auto-installs conda if needed)"
+	@echo "  make install-dev   - Quick dev install (assumes conda env exists)"
+	@echo "  make verify        - Verify installation and dependencies"
+	@echo "  make conda-env     - Create Conda environment with all dependencies"
+	@echo "  make conda-dev     - Set up development environment (run after conda-env)"
+	@echo "  make conda-clean   - Remove Conda environment"
+	@echo "\n🧪 Testing:"
+	@echo "  make test          - Run Python unit tests"
+	@echo "  make test-commands - Test all command modules (calc, folder, pdf, project)"
+	@echo "  make test-all      - Run all tests (Python + Commands + Docker)"
+	@echo "  make lint          - Run code style checks"
+	@echo "\n🐳 Docker Testing:"
+	@echo "  make docker-build  - Build all Docker test images"
+	@echo "  make docker-test   - Run complete Docker test suite"
+	@echo "  make docker-clean  - Clean up Docker resources"
 
-setup-dev:
-	python3 -m pip install --upgrade pip
-	python3 -m pip install -e .[ollama] pytest flake8 build twine httpx
+# Conda environment management
+conda-env:
+	@bash scripts/conda-env.sh create
+
+conda-dev:
+	@bash scripts/conda-env.sh dev
+
+conda-clean:
+	@bash scripts/conda-env.sh clean
 
 # Version management
 bump-patch:
-	@python3 scripts/bump-version.py patch
+	@python scripts/bump-version.py patch
 
 bump-minor:
-	@python3 scripts/bump-version.py minor
+	@python scripts/bump-version.py minor
 
 bump-major:
-	@python3 scripts/bump-version.py major
+	@python scripts/bump-version.py major
 
-dev: setup-dev
-	@echo "✅ Development environment ready!"
-	@echo ""
-	@echo "📋 Available commands:"
-	@echo "🧪 Testing:"
-	@echo "  make test           - Run Python unit tests"
-	@echo "  make docker-test    - Run complete Docker multiplatform test suite"
-	@echo "  make test-all       - Run both Python and Docker tests"
-	@echo ""
-	@echo "🐳 Docker Testing (Individual):"
-	@echo "  make docker-test-ubuntu   - Test Ubuntu 22.04"
-	@echo "  make docker-test-debian   - Test Debian 12"
-	@echo "  make docker-test-alpine   - Test Alpine Linux 3.19"
-	@echo "  make docker-test-centos   - Test CentOS Stream 9"
-	@echo "  make docker-test-arch     - Test Arch Linux"
-	@echo "  make docker-test-oneliner - Test one-liner installation"
-	@echo ""
-	@echo "🔧 Development:"
-	@echo "  make lint           - Run linting"
-	@echo "  make build          - Build package"
-	@echo "  make publish        - Publish to PyPI"
-	@echo "  make docker-build   - Build Docker test images"
-	@echo "  make docker-clean   - Clean Docker artifacts"
+# Install package in development mode with full conda setup
+install:
+	@echo "🦅 Running universal Bielik installation..."
+	@bash scripts/universal-install.sh
+
+# Quick install for development (assumes conda env exists)
+install-dev:
+	@bash scripts/test-python.sh install
+
+verify:
+	@python scripts/verify_installation.py
 
 lint:
-	@echo "🔍 Running flake8..."
-	flake8 bielik
-	@echo "✅ Linting passed!"
+	@bash scripts/test-python.sh lint
 
 # Python Unit Tests
 test:
-	@echo "🧪 Running Python unit tests..."
-	pytest
-	@echo "✅ Python tests passed!"
+	@bash scripts/test-python.sh pytest
+
+# Command Tests
+test-commands:
+	@bash scripts/test-commands.sh
 
 # Complete test suite (Python + Docker)
-test-all: test docker-test
+test-all: test test-commands docker-test
 	@echo "🎉 All tests completed successfully!"
 
 # Docker Testing Framework
 docker-build:
-	@echo "🐳 Building Docker test images..."
-	@docker-compose -f docker/test-multiplatform.yml build
-	@echo "✅ Docker images built!"
+	@bash scripts/docker-test.sh build
 
 docker-clean:
-	@echo "🧹 Cleaning Docker test artifacts..."
-	@docker-compose -f docker/test-multiplatform.yml down --volumes --remove-orphans 2>/dev/null || true
-	@docker system prune -f 2>/dev/null || true
-	@echo "✅ Docker cleanup completed!"
+	@bash scripts/docker-test.sh clean
 
 # Individual distribution tests
 docker-test-ubuntu:
-	@echo "🐧 Testing Ubuntu installation..."
-	@docker-compose -f docker/test-multiplatform.yml run --rm test-ubuntu
-	@echo "✅ Ubuntu test completed!"
+	@bash scripts/docker-test.sh ubuntu
 
 docker-test-debian:
-	@echo "🐧 Testing Debian installation..."
-	@docker-compose -f docker/test-multiplatform.yml run --rm test-debian
-	@echo "✅ Debian test completed!"
+	@bash scripts/docker-test.sh debian
 
 docker-test-alpine:
-	@echo "🏔️ Testing Alpine Linux installation..."
-	@docker-compose -f docker/test-multiplatform.yml run --rm test-alpine
-	@echo "✅ Alpine test completed!"
+	@bash scripts/docker-test.sh alpine
 
 docker-test-centos:
-	@echo "🎩 Testing CentOS/RHEL installation..."
-	@docker-compose -f docker/test-multiplatform.yml run --rm test-centos
-	@echo "✅ CentOS test completed!"
+	@bash scripts/docker-test.sh centos
 
 docker-test-arch:
-	@echo "🏛️ Testing Arch Linux installation..."
-	@docker-compose -f docker/test-multiplatform.yml run --rm test-arch
-	@echo "✅ Arch test completed!"
+	@bash scripts/docker-test.sh arch
 
 docker-test-oneliner:
-	@echo "🚀 Testing one-liner installation..."
-	@docker-compose -f docker/test-multiplatform.yml run --rm test-oneliner
-	@echo "✅ One-liner test completed!"
+	@bash scripts/docker-test.sh oneliner
 
 # Complete Docker test suite
-docker-test: docker-clean docker-build
-	@echo "🐳 Running complete Docker multiplatform test suite..."
-	@echo ""
-	@echo "📋 Testing on all supported Linux distributions:"
-	@echo "  • Ubuntu 22.04"
-	@echo "  • Debian 12"
-	@echo "  • Alpine Linux 3.19"
-	@echo "  • CentOS Stream 9"
-	@echo "  • Arch Linux"
-	@echo "  • One-liner installation"
-	@echo ""
-	@make docker-test-ubuntu
-	@make docker-test-debian
-	@make docker-test-alpine
-	@make docker-test-centos
-	@make docker-test-arch
-	@make docker-test-oneliner
-	@echo ""
-	@echo "🎉 All Docker multiplatform tests passed!"
-	@make docker-clean
+docker-test:
+	@bash scripts/docker-test.sh all
 
 build:
 	@bash scripts/build.sh
@@ -139,6 +114,4 @@ publish: clean
 	@bash scripts/publish.sh patch
 
 clean:
-	@echo "🧹 Cleaning build artifacts..."
-	rm -rf build dist *.egg-info .pytest_cache __pycache__ */__pycache__
-	@echo "✅ Clean completed!"
+	@bash scripts/clean.sh

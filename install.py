@@ -162,10 +162,25 @@ class BielikInstaller:
                 self.venv_dir = Path(sys.prefix)
                 return True
         
-        # Check if venv already exists
-        if self.venv_dir.exists() and (self.venv_dir / ('Scripts' if self.is_windows else 'bin')).exists():
-            self.log("Virtual environment already exists")
-            return True
+        # Check if venv already exists AND is functional
+        bin_dir = self.venv_dir / ('Scripts' if self.is_windows else 'bin')
+        python_exe = bin_dir / ('python.exe' if self.is_windows else 'python')
+        pip_exe = bin_dir / ('pip.exe' if self.is_windows else 'pip')
+        
+        if self.venv_dir.exists() and bin_dir.exists():
+            # Verify that critical executables actually exist
+            if python_exe.exists() and pip_exe.exists():
+                self.log("Virtual environment already exists and is functional")
+                return True
+            else:
+                self.log("Virtual environment exists but is incomplete/broken - recreating...", "WARNING")
+                # Remove broken venv
+                import shutil
+                try:
+                    shutil.rmtree(self.venv_dir)
+                    self.log("Removed broken virtual environment")
+                except Exception as e:
+                    self.log(f"Warning: Could not remove broken venv: {e}", "WARNING")
         
         # Handle externally managed environments
         if self.is_externally_managed and not self.is_docker:

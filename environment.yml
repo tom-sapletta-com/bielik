@@ -1,0 +1,110 @@
+name: bielik
+channels:
+  - pytorch
+  - conda-forge
+  - defaults
+
+dependencies:
+  # Core Python
+  - python=3.11
+  - pip
+  
+  # System dependencies
+  - cmake
+  - make
+  - ninja
+  - pkg-config
+  
+  # Compilers and build tools (Linux)
+  - gcc_linux-64    # [linux]
+  - gxx_linux-64    # [linux]
+  - libgcc          # [linux]
+  - libstdcxx-ng    # [linux]
+  # Windows build tools (commented out for Linux)
+  # - vs2019_win-64  # [win]
+  
+  # Core ML dependencies
+  - numpy
+  - scipy
+  - pandas
+  - tqdm
+  - pyyaml
+  - requests
+  - aiohttp
+  
+  # CPU optimization libraries for faster LLM inference
+  - mkl                 # Intel Math Kernel Library - optimized BLAS/LAPACK
+  - mkl-service         # MKL runtime services
+  - intel-openmp        # Intel OpenMP for multithreading
+  - blas=*=mkl          # Force MKL as BLAS backend
+  - openblas            # Alternative high-performance BLAS (fallback)
+  - openmp              # OpenMP support
+  
+  # Hugging Face ecosystem
+  - transformers
+  - datasets
+  - tokenizers
+  - accelerate
+  - bitsandbytes
+  - sentencepiece
+  - protobuf
+  
+  # Model serving
+  - flask
+  - fastapi
+  - uvicorn
+  - python-multipart
+  
+  # Development tools
+  - jupyter
+  - jupyterlab
+  - ipykernel
+  - black
+  - flake8
+  - isort
+  - mypy
+  - pytest
+  - pytest-cov
+  - build
+  - twine
+  - pre-commit
+  
+  # Document processing
+  - pypdf2
+  - python-docx
+  - beautifulsoup4
+  - lxml
+  
+  # Optional: Vision support (uncomment if needed)
+  # - torchvision
+  # - opencv
+  # - pillow
+  
+  # Install Bielik in development mode
+  - pip:
+    - -e .[local]
+    - llama-cpp-python
+    - python-dotenv
+    - rich
+    - typer
+    - typer-slim
+    - typer-slim[all]
+    # CPU optimization packages for faster LLM inference
+    - onnxruntime>=1.16.0        # High-performance inference engine
+    - optimum[onnxruntime]>=1.14.0  # Hugging Face model optimization
+    - intel-extension-for-transformers  # Intel CPU optimizations
+    - neural-compressor>=2.3     # Model compression and optimization
+    - onnx>=1.14.0              # ONNX model format support
+    # Additional performance libraries
+    - numba>=0.58.0             # JIT compilation for numerical code
+    - numexpr>=2.8.0            # Fast numerical expression evaluation
+
+# GPU support (uncomment if you have NVIDIA GPU)
+# - cudatoolkit=11.8
+# - cudnn=8.6
+# - nccl
+# - nvcc_linux-64  # [linux64]
+# - pip:
+#   - torch --index-url https://download.pytorch.org/whl/cu118
+#   - torchvision --index-url https://download.pytorch.org/whl/cu118
+#   - torchaudio --index-url https://download.pytorch.org/whl/cu118
